@@ -2,24 +2,19 @@
   "Version": 10,
   "Events": [
     {
-      "Msg": "Join the OpenWF Discord!",
+      "Msg": "加入XFEstudio-OpenWF讨论群聊",
       "Messages": [
-        { "LanguageCode": "fr", "Message": "Rejoignez le Discord OpenWF!" },
-        { "LanguageCode": "it", "Message": "Unisciti al Discord di OpenWF!" },
-        { "LanguageCode": "de", "Message": "Trete dem OpenWF Discord bei!" },
-        { "LanguageCode": "es", "Message": "Únete al Discord de OpenWF!" },
-        { "LanguageCode": "pt", "Message": "Junte-se ao Discord do OpenWF!" },
-        { "LanguageCode": "ru", "Message": "Присоединяйтесь к OpenWF Discord!" },
-        { "LanguageCode": "pl", "Message": "Dołącz do Discord OpenWF!" },
-        { "LanguageCode": "uk", "Message": "Приєднуйтесь до OpenWF Discord!" },
-        { "LanguageCode": "tr", "Message": "OpenWF Discord'a katıl!" },
-        { "LanguageCode": "ja", "Message": "OpenWFのDiscordに参加しよう！" },
-        { "LanguageCode": "zh", "Message": "加入OpenWF Discord!" },
-        { "LanguageCode": "ko", "Message": "OpenWF Discord에 가입하세요!" },
-        { "LanguageCode": "tc", "Message": "加入OpenWF Discord!" }
+        { "LanguageCode": "zh", "Message": "加加入XFEstudio-OpenWF讨论群聊" }
       ],
-      "Prop": "https://discord.gg/PNNZ3asUuY",
+      "Prop": "https://qm.qq.com/q/FTI71T80U",
       "Icon": "/Lotus/Interface/Icons/DiscordIconNoBacker.png"
+    },
+    {
+      "Msg": "b站主页",
+      "Messages": [
+        { "LanguageCode": "zh", "Message": "b站主页-XFE菜狗" }
+      ],
+      "Prop": "https://space.bilibili.com/200494622"
     }
   ],
   "InGameMarket": {

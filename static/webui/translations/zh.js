@@ -92,7 +92,7 @@ dict = {
     code_feature_32: `[UNTRANSLATED] Arcane Slot`,
     code_feature_64: `[UNTRANSLATED] Second Arcane Slot`,
     code_feature_1024: `[UNTRANSLATED] Valence Override`,
-    login_description: `使用您的 OpenWF 账户凭证登录(与游戏内连接本服务器时使用的昵称相同)`,
+    login_description: `使用您的 XFE-OpenWF 账户凭证登录(与游戏内连接本服务器时使用的昵称相同)`,
     login_emailLabel: `电子邮箱`,
     login_passwordLabel: `密码`,
     login_loginButton: `登录`,
