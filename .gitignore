@@ -19,3 +19,4 @@ yarn.lock
 
 # Default Docker directory
 /docker-data
+/.vs/XFESpaceNinjaServer.slnx/FileContentIndex
