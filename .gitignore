@@ -19,6 +19,4 @@ yarn.lock
 
 # Default Docker directory
 /docker-data
-/.vs/XFESpaceNinjaServer.slnx/FileContentIndex
-/.vs/slnx.sqlite
-/.vs/ProjectSettings.json
+/.vs/**
