@@ -21,3 +21,4 @@ yarn.lock
 /docker-data
 /.vs/XFESpaceNinjaServer.slnx/FileContentIndex
 /.vs/slnx.sqlite
+/.vs/ProjectSettings.json
