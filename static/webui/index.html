@@ -1,7 +1,7 @@
 <!doctype html>
-<html lang="en" data-bs-theme="dark">
+<html lang="zh" data-bs-theme="dark">
 <head>
-    <title>XFE-OpenWF</title>
+    <title>XFEstudio-OpenWF</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="stylesheet" href="/webui/libs/bootstrap.min.css" />
     <link rel="stylesheet" href="/webui/style.css" />
@@ -12,11 +12,12 @@
             <button class="navbar-toggler d-lg-none me-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-label="Toggle sidebar">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <a class="navbar-brand">XFE-OpenWF</a>
+            <a class="navbar-brand">XFEstudio-OpenWF</a>
             <div class="ms-auto nav-item dropdown">
                 <button id="active-lang-name" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false"></button>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item active" href="#" data-lang="en" onclick="event.preventDefault();setLanguage('en');">English</a></li>
+                    <li><a class="dropdown-item active" href="#" data-lang="zh" onclick="event.preventDefault();setLanguage('zh');">简体中文</a></li>
+                    <li><a class="dropdown-item" href="#" data-lang="en" onclick="event.preventDefault();setLanguage('en');">English</a></li>
                     <li><a class="dropdown-item" href="#" data-lang="de" onclick="event.preventDefault();setLanguage('de');">Deutsch</a></li>
                     <li><a class="dropdown-item" href="#" data-lang="es" onclick="event.preventDefault();setLanguage('es');">Español</a></li>
                     <li><a class="dropdown-item" href="#" data-lang="fr" onclick="event.preventDefault();setLanguage('fr');">Français</a></li>
@@ -28,7 +29,6 @@
                     <li><a class="dropdown-item" href="#" data-lang="ru" onclick="event.preventDefault();setLanguage('ru');">Русский</a></li>
                     <li><a class="dropdown-item" href="#" data-lang="tr" onclick="event.preventDefault();setLanguage('tr');">Türkçe</a></li>
                     <li><a class="dropdown-item" href="#" data-lang="uk" onclick="event.preventDefault();setLanguage('uk');">Українська</a></li>
-                    <li><a class="dropdown-item" href="#" data-lang="zh" onclick="event.preventDefault();setLanguage('zh');">简体中文</a></li>
                     <li><a class="dropdown-item" href="#" data-lang="tc" onclick="event.preventDefault();setLanguage('tc');">繁體中文</a></li>
                     <li><a class="dropdown-item" href="#" data-lang="th" onclick="event.preventDefault();setLanguage('th');">แบบไทย</a></li>
                     <li><hr class="dropdown-divider"></li>
@@ -50,7 +50,7 @@
     <div class="container pt-3 pb-3" id="main-view">
         <div class="offcanvas-lg offcanvas-start" tabindex="-1" id="sidebar" aria-labelledby="sidebarLabel">
             <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="sidebarLabel">XFE-OpenWF WebUI</h5>
+                <h5 class="offcanvas-title" id="sidebarLabel">XFEstudio-OpenWF WebUI</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#sidebar" aria-label="Close"></button>
             </div>
             <div class="offcanvas-body">
@@ -79,7 +79,7 @@
             </div>
         </div>
         <div id="main-content" class="w-100">
-            <div data-route="/webui/" data-title="Login | XFE-OpenWF WebUI">
+            <div data-route="/webui/" data-title="Login | XFEstudio-OpenWF WebUI">
                 <p data-loc="login_description"></p>
                 <form onsubmit="doLogin();return false;">
                     <label for="email" data-loc="login_emailLabel"></label>
@@ -92,7 +92,8 @@
                     <button class="btn btn-secondary" type="submit" onclick="registerSubmit = true;" data-loc="login_registerButton"></button>
                 </form>
             </div>
-            <div data-route="/webui/inventory" data-title="Inventory | XFE-OpenWF WebUI">
+            <div data-route="/webui/inventory" data-title="Inventory | XFEstudio-OpenWF WebUI">
+                <p>加入XFEstudio-OpenWF群聊 <a href="https://qm.qq.com/q/uYW2MrRFo4">点击加入</a></p>
                 <p class="mb-3 inventory-update-note"></p>
                 <div class="card mb-3">
                     <div class="card-header">
@@ -572,7 +573,7 @@
                     </div>
                 </div>
             </div>
-            <div id="guild-route" data-route="/webui/guildView" data-title="Guild | XFE-OpenWF WebUI">
+            <div id="guild-route" data-route="/webui/guildView" data-title="Guild | XFEstudio-OpenWF WebUI">
                 <h3 id="guildView-loading" data-loc="general_loading"></h3>
                 <h3 id="guildView-na" class="d-none" data-loc="guildView_na"></h3>
                 <h5 id="guildView-naDescription" class="d-none" data-loc="guildView_naDescription"></h5>
@@ -748,7 +749,7 @@
                     </div>
                 </div>
             </div>
-            <div id="detailedView-route" data-route="/webui/detailedView" data-title="Inventory | XFE-OpenWF WebUI">
+            <div id="detailedView-route" data-route="/webui/detailedView" data-title="Inventory | XFEstudio-OpenWF WebUI">
                 <h3 id="detailedView-loading" class="mb-0" data-loc="general_loading"></h3>
                 <h3 id="detailedView-title" class="mb-0"></h3>
                 <p class="text-body-secondary"></p>
@@ -863,7 +864,7 @@
                     <div id="equipmentFeaturesButtons-card" class="card-body d-flex flex-wrap gap-2"></div>
                 </div>
             </div>
-            <div data-route="/webui/mods" data-title="Mods | XFE-OpenWF WebUI">
+            <div data-route="/webui/mods" data-title="Mods | XFEstudio-OpenWF WebUI">
                 <p class="mb-3 inventory-update-note"></p>
                 <div class="row g-3">
                     <div class="col-xxl-6">
@@ -919,7 +920,7 @@
                     </div>
                 </div>
             </div>
-            <div data-route="/webui/quests" data-title="Quests | XFE-OpenWF WebUI">
+            <div data-route="/webui/quests" data-title="Quests | XFEstudio-OpenWF WebUI">
                 <p class="mb-3 inventory-update-note"></p>
                 <div class="row g-3">
                     <div class="col-md-6">
@@ -952,7 +953,7 @@
                     </div>
                 </div>
             </div>
-            <div data-route="/webui/cheats, /webui/settings" data-title="Cheats | XFE-OpenWF WebUI">
+            <div data-route="/webui/cheats, /webui/settings" data-title="Cheats | XFEstudio-OpenWF WebUI">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <div class="card">
@@ -1576,7 +1577,7 @@
                     </div>
                 </div>
             </div>
-            <div data-route="/webui/import" data-title="Import | OpenWF WebUI">
+            <div data-route="/webui/import" data-title="Import | XFEstudio-OpenWF WebUI">
                 <p>
                     <span data-loc="import_importNote"></span>
                     <span data-loc="import_importNote2"></span>
@@ -1665,7 +1666,7 @@
     <script>
         setTimeout(function() {
             if (location.protocol == "file:") {
-                document.write("You can access the WebUI via http://localhost/ when SpaceNinjaServer is running.");
+                document.write("You can access the WebUI by openwf.xfegzs.com.");
             }
         }, 1);
     </script>
