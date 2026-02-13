@@ -83,7 +83,7 @@ const toTitleCase = (str: string): string => {
 };
 
 const getItemListsController: RequestHandler = (req, response) => {
-    const lang = getDict(typeof req.query.lang == "string" ? req.query.lang : "en");
+    const lang = getDict(typeof req.query.lang == "string" ? req.query.lang : "zh");
     const res: ItemLists = {
         Suits: [],
         LongGuns: [],
