@@ -5,6 +5,13 @@ import { args } from "../helpers/commandLineArguments.ts";
 import { Inbox } from "../models/inboxModel.ts";
 import type { Request } from "express";
 import { Account } from "../models/loginModel.ts";
+import type { TRegionId } from "./arbiterService.ts";
+
+export interface IHubServer {
+    address: string;
+    regions?: TRegionId[];
+    dtlsUnsupported?: boolean;
+}
 
 export interface IConfig {
     mongodbUrl: string;
@@ -16,10 +23,14 @@ export interface IConfig {
     bindAddress?: string;
     httpPort?: number;
     httpsPort?: number;
+    httpsCertFile?: string;
+    httpsKeyFile?: string;
     ircExecutable?: string;
     ircAddress?: string;
     hubExecutable?: string;
     hubAddress?: string;
+    hubServers?: IHubServer[];
+    noHubDiscrimination?: boolean;
     nrsAddress?: string;
     dtls?: number;
     administratorNames?: string[];
@@ -44,6 +55,7 @@ export interface IConfig {
         varziaFullyStocked?: boolean;
         vanguardVaultRelics?: boolean;
         wolfHunt?: number;
+        scarletSpear?: boolean;
         orphixVenom?: boolean;
         bloodOfPerita?: boolean;
         longShadow?: boolean;
@@ -58,6 +70,10 @@ export interface IConfig {
         voidCorruption2025Week2?: boolean;
         voidCorruption2025Week3?: boolean;
         voidCorruption2025Week4?: boolean;
+        dagathAlerts2026Week1?: boolean;
+        dagathAlerts2026Week2?: boolean;
+        dagathAlerts2026Week3?: boolean;
+        dagathAlerts2026Week4?: boolean;
         qtccAlerts?: boolean;
         galleonOfGhouls?: number;
         ghoulEmergenceOverride?: boolean;
@@ -75,6 +91,7 @@ export interface IConfig {
         vallisOverride?: string;
         duviriOverride?: string;
         nightwaveOverride?: string;
+        nightwaveEpisode?: number;
         allTheFissures?: string;
         varziaOverride?: string;
         circuitGameModes?: string[];
@@ -216,6 +233,10 @@ export const syncConfigWithDatabase = (): void => {
         void Account.updateMany({}, { $unset: { receivedEventMessage_galleonOfGhouls: 1 } }).then(() => {});
         void Inbox.deleteMany({ goalTag: "GalleonRobbery" }).then(() => {});
     }
+    if (!config.worldState?.longShadow) {
+        void Account.updateMany({}, { $unset: { receivedEventMessage_longShadow: 1 } }).then(() => {});
+        void Inbox.deleteMany({ goalTag: "NightwatchTacAlert" }).then(() => {});
+    }
 };
 
 export const getReflexiveAddress = (request: Request): { myAddress: string; myUrlBase: string } => {
@@ -237,16 +258,20 @@ export const getReflexiveAddress = (request: Request): { myAddress: string; myUr
     return { myAddress, myUrlBase };
 };
 
-export interface IBindings {
+export interface IWebServerParams {
     address: string;
     httpPort: number;
     httpsPort: number;
+    certFile: string;
+    keyFile: string;
 }
 
-export const configGetWebBindings = (): IBindings => {
+export const getWebServerParams = (): IWebServerParams => {
     return {
         address: config.bindAddress || "0.0.0.0",
         httpPort: config.httpPort || 80,
-        httpsPort: config.httpsPort || 443
+        httpsPort: config.httpsPort || 443,
+        certFile: config.httpsCertFile || "static/cert/cert.pem",
+        keyFile: config.httpsKeyFile || "static/cert/key.pem"
     };
 };

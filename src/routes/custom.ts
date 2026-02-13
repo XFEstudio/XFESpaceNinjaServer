@@ -12,6 +12,7 @@ import { getGuildController } from "../controllers/custom/getGuildController.ts"
 import { getAllianceController } from "../controllers/custom/getAllianceController.ts";
 import { renameAccountController } from "../controllers/custom/renameAccountController.ts";
 import { ircDroppedController } from "../controllers/custom/ircDroppedController.ts";
+import { hubDroppedController } from "../controllers/custom/hubDroppedController.ts";
 import { unlockAllIntrinsicsController } from "../controllers/custom/unlockAllIntrinsicsController.ts";
 import { addMissingMaxRankModsController } from "../controllers/custom/addMissingMaxRankModsController.ts";
 import { webuiFileChangeDetectedController } from "../controllers/custom/webuiFileChangeDetectedController.ts";
@@ -24,6 +25,7 @@ import { unlockAllShipFeaturesController } from "../controllers/custom/unlockAll
 import { unlockAllCapturaScenesController } from "../controllers/custom/unlockAllCapturaScenesController.ts";
 import { removeCustomizationController } from "../controllers/custom/removeCustomizationController.ts";
 import { removeIsNewController } from "../controllers/custom/removeIsNewController.ts";
+import { retroactivelyApplyCheatController } from "../controllers/api/retroactivelyApplyCheatController.ts";
 
 import { abilityOverrideController } from "../controllers/custom/abilityOverrideController.ts";
 import { createAccountController } from "../controllers/custom/createAccountController.ts";
@@ -66,6 +68,7 @@ customRouter.get("/getGuild", getGuildController);
 customRouter.get("/getAlliance", getAllianceController);
 customRouter.get("/renameAccount", renameAccountController);
 customRouter.get("/ircDropped", ircDroppedController);
+customRouter.get("/hubDropped", hubDroppedController);
 customRouter.get("/unlockAllIntrinsics", unlockAllIntrinsicsController);
 customRouter.get("/addMissingMaxRankMods", addMissingMaxRankModsController);
 customRouter.get("/webuiFileChangeDetected", webuiFileChangeDetectedController);
@@ -78,6 +81,7 @@ customRouter.get("/unlockAllShipFeatures", unlockAllShipFeaturesController);
 customRouter.get("/unlockAllCapturaScenes", unlockAllCapturaScenesController);
 customRouter.get("/removeCustomization", removeCustomizationController);
 customRouter.get("/removeIsNew", removeIsNewController);
+customRouter.get("/retroactivelyApplyCheat", retroactivelyApplyCheatController);
 
 customRouter.post("/abilityOverride", abilityOverrideController);
 customRouter.post("/createAccount", createAccountController);

@@ -11,7 +11,8 @@
 let auth_pending = false,
     did_initial_auth = false,
     ws_is_open = false,
-    wsid = 0;
+    wsid = 0,
+    ws_reconnect = false;
 const sendAuth = isRegister => {
     if (ws_is_open && localStorage.getItem("email") && localStorage.getItem("password")) {
         auth_pending = true;
@@ -52,10 +53,7 @@ function openWebSocket() {
             location.port = location.protocol == "https:" ? msg.ports.https : msg.ports.http;
         }
         if ("config_reloaded" in msg) {
-            //window.is_admin = undefined;
-            if (single.getCurrentPath() == "/webui/cheats") {
-                single.loadRoute("/webui/cheats");
-            }
+            refreshServerConfig();
         }
         if ("auth_succ" in msg) {
             auth_pending = false;
@@ -74,6 +72,11 @@ function openWebSocket() {
             if (!did_initial_auth) {
                 did_initial_auth = true;
                 updateInventory();
+            }
+            if (ws_reconnect) {
+                ws_reconnect = false;
+                // Config may have changed during the time we were disconnected.
+                refreshServerConfig();
             }
         }
         if ("auth_fail" in msg) {
@@ -108,10 +111,18 @@ function openWebSocket() {
     };
     window.ws.onclose = function () {
         ws_is_open = false;
+        ws_reconnect = true;
         setTimeout(openWebSocket, 3000);
     };
 }
 openWebSocket();
+
+function refreshServerConfig() {
+    //window.is_admin = undefined;
+    if (single.getCurrentPath() == "/webui/cheats") {
+        single.loadRoute("/webui/cheats");
+    }
+}
 
 function getWebSocket() {
     return new Promise(resolve => {
@@ -487,6 +498,11 @@ function fetchItemList() {
                 name: loc("code_pigment")
             });
 
+            data.miscitems.push({
+                uniqueName: "/Lotus/Types/Items/MiscItems/BossNavCode",
+                name: loc("code_bossNavCode")
+            });
+
             data.VarziaOffers.unshift({
                 uniqueName: "",
                 name: loc("disabled")
@@ -739,10 +755,31 @@ fetchItemList();
 
 const accountCheats = document.querySelectorAll("#account-cheats input[id]");
 
+let inventory_data;
+// Assumes that caller revalidates authz
+function getInventoryData() {
+    return new Promise((resolve, reject) => {
+        if (inventory_data) {
+            resolve(inventory_data);
+        } else {
+            $.get("/api/inventory.php?" + window.authz + "&xpBasedLevelCapDisabled=1&ignoreBuildLabel=1")
+                .done(data => {
+                    inventory_data = data;
+                    resolve(inventory_data);
+                })
+                .fail(reject);
+        }
+    });
+}
+
 // Assumes that caller revalidates authz
 function updateInventory() {
-    const req = $.get("/api/inventory.php?" + window.authz + "&xpBasedLevelCapDisabled=1&ignoreBuildLabel=1");
-    req.done(data => {
+    inventory_data = undefined;
+    translateInventoryDataToDom();
+}
+
+function translateInventoryDataToDom() {
+    getInventoryData().then(data => {
         window.itemListPromise.then(itemMap => {
             window.didInitialInventoryUpdate = true;
             window.guildId = data?.GuildId?.$oid;
@@ -2685,8 +2722,7 @@ function addMissingEvolutionProgress() {
 
 function maxRankAllEvolutions() {
     revalidateAuthz().then(() => {
-        const req = $.get("/api/inventory.php?" + window.authz + "&xpBasedLevelCapDisabled=1&ignoreBuildLabel=1");
-        req.done(data => {
+        getInventoryData().then(data => {
             const requests = [];
 
             data.EvolutionProgress.forEach(item => {
@@ -2711,8 +2747,7 @@ function maxRankAllEvolutions() {
 
 function maxRankAllEquipment(categories) {
     revalidateAuthz().then(() => {
-        const req = $.get("/api/inventory.php?" + window.authz + "&xpBasedLevelCapDisabled=1&ignoreBuildLabel=1");
-        req.done(data => {
+        getInventoryData().then(data => {
             window.itemListPromise.then(itemMap => {
                 const batchData = {};
 
@@ -2953,14 +2988,22 @@ function doAcquireCountItems(category) {
                         ItemCount: count
                     }
                 ])
-            }).done(function () {
-                if (count > 0) {
-                    toast(loc("code_succAdded"));
-                } else {
-                    toast(loc("code_succRemoved"));
-                }
-                if (category != "miscitems") updateInventory();
-            });
+            })
+                .done(function (didAnything) {
+                    if (didAnything) {
+                        if (count > 0) {
+                            toast(loc("code_succAdded"));
+                        } else {
+                            toast(loc("code_succRemoved"));
+                        }
+                    } else {
+                        toast(loc("code_nothingToDo"));
+                    }
+                    if (category != "miscitems") updateInventory();
+                })
+                .fail(r => {
+                    toast(r.responseText);
+                });
         });
     }
 }
@@ -3123,14 +3166,18 @@ function doAcquireMod() {
                                 : undefined
                     }
                 ])
-            }).done(function () {
-                if (count > 0) {
-                    toast(loc("code_succAdded"));
-                } else {
-                    toast(loc("code_succRemoved"));
-                }
-                updateInventory();
-            });
+            })
+                .done(function () {
+                    if (count > 0) {
+                        toast(loc("code_succAdded"));
+                    } else {
+                        toast(loc("code_succRemoved"));
+                    }
+                    updateInventory();
+                })
+                .fail(r => {
+                    toast(r.responseText);
+                });
         });
     }
 }
@@ -3272,35 +3319,33 @@ single.getRoute("/webui/cheats").on("beforeload", function () {
 
 function doUnlockAllFocusSchools() {
     revalidateAuthz().then(() => {
-        $.get("/api/inventory.php?" + window.authz + "&xpBasedLevelCapDisabled=1&ignoreBuildLabel=1").done(
-            async data => {
-                const missingFocusUpgrades = {
-                    "/Lotus/Upgrades/Focus/Attack/AttackFocusAbility": true,
-                    "/Lotus/Upgrades/Focus/Tactic/TacticFocusAbility": true,
-                    "/Lotus/Upgrades/Focus/Ward/WardFocusAbility": true,
-                    "/Lotus/Upgrades/Focus/Defense/DefenseFocusAbility": true,
-                    "/Lotus/Upgrades/Focus/Power/PowerFocusAbility": true
-                };
-                if (data.FocusUpgrades) {
-                    for (const focusUpgrade of data.FocusUpgrades) {
-                        if (focusUpgrade.ItemType in missingFocusUpgrades) {
-                            delete missingFocusUpgrades[focusUpgrade.ItemType];
-                        }
-                    }
-                }
-                for (const upgradeType of Object.keys(missingFocusUpgrades)) {
-                    await unlockFocusSchool(upgradeType);
-                }
-                if (Object.keys(missingFocusUpgrades).length == 0) {
-                    toast(loc("code_focusAllUnlocked"));
-                } else {
-                    toast(loc("code_focusUnlocked").split("|COUNT|").join(Object.keys(missingFocusUpgrades).length));
-                    if (ws_is_open) {
-                        window.ws.send(JSON.stringify({ sync_inventory: true }));
+        getInventoryData().then(async data => {
+            const missingFocusUpgrades = {
+                "/Lotus/Upgrades/Focus/Attack/AttackFocusAbility": true,
+                "/Lotus/Upgrades/Focus/Tactic/TacticFocusAbility": true,
+                "/Lotus/Upgrades/Focus/Ward/WardFocusAbility": true,
+                "/Lotus/Upgrades/Focus/Defense/DefenseFocusAbility": true,
+                "/Lotus/Upgrades/Focus/Power/PowerFocusAbility": true
+            };
+            if (data.FocusUpgrades) {
+                for (const focusUpgrade of data.FocusUpgrades) {
+                    if (focusUpgrade.ItemType in missingFocusUpgrades) {
+                        delete missingFocusUpgrades[focusUpgrade.ItemType];
                     }
                 }
             }
-        );
+            for (const upgradeType of Object.keys(missingFocusUpgrades)) {
+                await unlockFocusSchool(upgradeType);
+            }
+            if (Object.keys(missingFocusUpgrades).length == 0) {
+                toast(loc("code_focusAllUnlocked"));
+            } else {
+                toast(loc("code_focusUnlocked").split("|COUNT|").join(Object.keys(missingFocusUpgrades).length));
+                if (ws_is_open) {
+                    window.ws.send(JSON.stringify({ sync_inventory: true }));
+                }
+            }
+        });
     });
 }
 
@@ -3349,8 +3394,13 @@ document.querySelectorAll("#account-cheats input[type=checkbox]").forEach(elm =>
                     key: elm.id,
                     value: value
                 })
-            }).done(() => {
+            }).done(res => {
                 elm.checked = value;
+                if (res == "retroactivable") {
+                    if (window.confirm(loc("cheats_retroactivePrompt"))) {
+                        $.get("/custom/retroactivelyApplyCheat?" + window.authz + "&cheat=" + elm.id);
+                    }
+                }
             });
         });
     };
@@ -3421,8 +3471,7 @@ function doAddAllMods() {
     modsAll.delete("/Lotus/Upgrades/Mods/Fusers/LegendaryModFuser");
 
     revalidateAuthz().then(() => {
-        const req = $.get("/api/inventory.php?" + window.authz + "&xpBasedLevelCapDisabled=1&ignoreBuildLabel=1");
-        req.done(data => {
+        getInventoryData().then(data => {
             for (const modOwned of data.RawUpgrades) {
                 if ((modOwned.ItemCount ?? 1) > 0) {
                     modsAll.delete(modOwned.ItemType);
@@ -3453,8 +3502,7 @@ function doAddAllMods() {
 
 function doRemoveUnrankedMods() {
     revalidateAuthz().then(() => {
-        const req = $.get("/api/inventory.php?" + window.authz + "&xpBasedLevelCapDisabled=1&ignoreBuildLabel=1");
-        req.done(inventory => {
+        getInventoryData().then(data => {
             window.itemListPromise.then(itemMap => {
                 $.post({
                     url: "/api/sell.php?" + window.authz,
@@ -3535,7 +3583,7 @@ single.getRoute("#guild-route").on("beforeload", function () {
     });
     $("#guild-route > .row").addClass("d-none");
     if (window.didInitialInventoryUpdate) {
-        updateInventory();
+        translateInventoryDataToDom();
     }
 });
 
@@ -4103,13 +4151,14 @@ const importSamples = {
         },
         Counselor: true
     },
-    removeDeathMarks: {
-        DeathMarks: [],
-        Harvestable: false,
-        DeathSquadable: false
-    },
     maxStratos: {
         BountyScore: 39
+    },
+    clearWishlist: {
+        Wishlist: []
+    },
+    clearLocPins: {
+        CustomMarkers: []
     }
 };
 function setImportSample(key) {

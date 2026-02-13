@@ -37,6 +37,7 @@ export const accountCheatBooleans = [
     "dontSubtractPurchaseStandingCost",
     "dontSubtractVoidTraces",
     "dontSubtractConsumables",
+    "dontSubtractKeys",
     "finishInvasionsInOneMission",
     "infiniteCredits",
     "infinitePlatinum",
@@ -65,7 +66,8 @@ export const accountCheatBooleans = [
     "exceptionalRelicsAlwaysGiveBronzeReward",
     "flawlessRelicsAlwaysGiveSilverReward",
     "radiantRelicsAlwaysGiveGoldReward",
-    "disableDailyTribute"
+    "disableDailyTribute",
+    "tradesDontTouchInventory" // API-only cheat for bot developers
 ] as const;
 export const accountCheatNumbers = [
     "nemesisHenchmenKillsMultiplierGrineer",
@@ -136,11 +138,19 @@ export interface IInventoryDatabase
             | "PersonalGoalProgress"
             | "CurrentLoadOutIds"
             | "FocusLoadouts"
+            | "ChallengeInstanceStates"
+            | "PeriodicMissionCompletions"
             | TEquipmentKey
         >,
         InventoryDatabaseEquipment,
         IAccountCheats {
+    // SNS-specific fields for server-side tracking
     accountOwnerId: Types.ObjectId;
+    MissionRelicRewards?: ITypeCount[];
+    HarvesterPoints?: number;
+    DeathSquadPoints?: number;
+    NemesisTaxedCredits?: number;
+
     Created: Date;
     CurrentLoadOutIds: Types.ObjectId[] | IOid[]; // should be Types.ObjectId[] but might be IOid[] because of old commits
     TrainingDate: Date;
@@ -181,8 +191,9 @@ export interface IInventoryDatabase
     EndlessXP?: IEndlessXpProgressDatabase[];
     DescentRewards?: IDescentCategoryRewardDatabase[];
     PersonalGoalProgress?: IGoalProgressDatabase[];
-    MissionRelicRewards?: ITypeCount[];
     FocusLoadouts?: IFocusLoadoutDatabase[];
+    ChallengeInstanceStates?: IChallengeInstanceStateDatabase[];
+    PeriodicMissionCompletions: IPeriodicMissionCompletionDatabase[];
 }
 
 export interface IQuestKeyDatabase {
@@ -368,7 +379,7 @@ export interface IInventoryClient
     LevelKeys: ITypeCount[];
     TauntHistory?: ITaunt[];
     StoryModeChoice: string;
-    PeriodicMissionCompletions: IPeriodicMissionCompletionDatabase[];
+    PeriodicMissionCompletions: IPeriodicMissionCompletionResponse[];
     KubrowPetEggs?: IKubrowPetEggClient[];
     LoreFragmentScans: ILoreFragmentScan[];
     EquippedEmotes: string[];
@@ -412,7 +423,7 @@ export interface IInventoryClient
     ThemeBackground: string;
     ThemeSounds: string;
     BountyScore?: number;
-    //ChallengeInstanceStates: IChallengeInstanceState[];
+    ChallengeInstanceStates?: IChallengeInstanceStateClient[];
     LoginMilestoneRewards: string[];
     RecentVendorPurchases?: IRecentVendorPurchaseClient[];
     NodeIntrosCompleted: string[];
@@ -460,8 +471,6 @@ export interface IInventoryClient
     PendingCoupon?: IPendingCouponClient;
     Harvestable?: boolean;
     DeathSquadable?: boolean;
-    HarvesterPoints?: number;
-    DeathSquadPoints?: number;
     EndlessXP?: IEndlessXpProgressClient[];
     DescentRewards?: IDescentCategoryRewardClient[];
     DialogueHistory?: IDialogueHistoryClient;
@@ -517,11 +526,15 @@ export interface IBooster {
     UsesRemaining?: number;
 }
 
-export interface IChallengeInstanceState {
-    id: IOid;
+export interface IChallengeInstanceStateDatabase {
     Progress: number;
     params: IParam[];
     IsRewardCollected: boolean;
+    _id: Types.ObjectId;
+}
+
+export interface IChallengeInstanceStateClient extends Omit<IChallengeInstanceStateDatabase, "_id"> {
+    id: IOidWithLegacySupport;
 }
 
 export interface IParam {
@@ -909,7 +922,6 @@ export interface IPendingCouponClient {
 export interface IPendingRecipeDatabase {
     ItemType: string;
     CompletionDate: Date;
-    ItemId: IOid;
     TargetItemId?: string; // unsure what this is for
     TargetFingerprint?: string;
     LongGuns?: IEquipmentDatabase[];
@@ -923,6 +935,7 @@ export interface IPendingRecipeClient extends Omit<
     IPendingRecipeDatabase,
     "CompletionDate" | "LongGuns" | "Pistols" | "Melee" | "SuitToUnbrand" | "KubrowPet"
 > {
+    ItemId: IOid;
     CompletionDate: IMongoDate;
 }
 
@@ -948,6 +961,7 @@ export interface ITradeOffer {
     MiscItems?: IMiscItem[];
     Recipes?: ITypeCount[];
     FusionTreasures?: IFusionTreasure[];
+    NemesisHistory?: INemesisClient;
     PremiumCredits?: number;
     _SlotOrderInfo: string[];
 }

@@ -8,7 +8,6 @@ import {
     ExportAnimals,
     ExportEnemies,
     ExportFusionBundles,
-    ExportKeys,
     ExportRegions,
     ExportRelics,
     ExportRewards
@@ -52,11 +51,18 @@ import {
 import { updateQuestKey } from "./questService.ts";
 import { Types } from "mongoose";
 import type { IAffiliationMods, IInventoryChanges } from "../types/purchaseTypes.ts";
-import { fromStoreItem, getLevelKeyRewards, isStoreItem, toStoreItem } from "./itemDataService.ts";
+import {
+    fromStoreItem,
+    getKey,
+    getLevelKeyRewards,
+    getMissionDeck,
+    isStoreItem,
+    toStoreItem
+} from "./itemDataService.ts";
 import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
 import { getEntriesUnsafe } from "../utils/ts-utils.ts";
 import { handleStoreItemAcquisition } from "./purchaseService.ts";
-import type { IMissionCredits, IMissionReward } from "../types/missionTypes.ts";
+import type { IMissionCredits, IMissionReward, INemesisTaxInfo, IRecoveredItemInfo } from "../types/missionTypes.ts";
 import { crackRelic } from "../helpers/relicHelper.ts";
 import type { IMessageCreationTemplate } from "./inboxService.ts";
 import { createMessage } from "./inboxService.ts";
@@ -69,7 +75,8 @@ import {
     getInfNodes,
     getKillTokenRewardCount,
     getNemesisManifest,
-    getNemesisPasscode
+    getNemesisPasscode,
+    getNemesisTaxInfo
 } from "../helpers/nemesisHelpers.ts";
 import { Loadout } from "../models/inventoryModels/loadoutModel.ts";
 import {
@@ -85,7 +92,7 @@ import {
 import { config } from "./configService.ts";
 import libraryDailyTasks from "../../static/fixed_responses/libraryDailyTasks.json" with { type: "json" };
 import type { IGoal, ISyndicateJob, ISyndicateMissionInfo } from "../types/worldStateTypes.ts";
-import { fromOid, version_compare } from "../helpers/inventoryHelpers.ts";
+import { fromOid, toObjectId, toOid2, version_compare } from "../helpers/inventoryHelpers.ts";
 import type { TAccountDocument } from "./loginService.ts";
 import type { ITypeCount } from "../types/commonTypes.ts";
 import type { IEquipmentClient } from "../types/equipmentTypes.ts";
@@ -103,6 +110,11 @@ const getRotations = (rewardInfo: IRewardInfo, tierOverride?: number): number[] 
             rotations.push(Math.min(i, 2));
         }
         return rotations;
+    }
+
+    // For isleweaver, simply roll A & B. (https://onlyg.it/OpenWF/SpaceNinjaServer/issues/3182)
+    if (rewardInfo.T == 17 || rewardInfo.T == 19) {
+        return [0, 1];
     }
 
     const region = ExportRegions[rewardInfo.node] as IRegion | undefined;
@@ -185,7 +197,7 @@ export const addMissionInventoryUpdates = async (
                 ]);
             }
         }
-        if (inventoryUpdates.KeyToRemove) {
+        if (inventoryUpdates.KeyToRemove && !inventory.dontSubtractKeys) {
             if (!inventoryUpdates.KeyOwner || inventory.accountOwnerId.equals(inventoryUpdates.KeyOwner)) {
                 addLevelKeys(inventory, [
                     {
@@ -832,7 +844,7 @@ export const addMissionInventoryUpdates = async (
                     const factionSidedWith = clientProgress.AttackerScore ? invasion.Faction : invasion.DefenderFaction;
                     if (invasion.Faction != "FC_INFESTATION") {
                         const info = factionSidedWith != "FC_GRINEER" ? grineerDeathSquadInfo : corpusDeathSquadInfo;
-                        if (!inventory[info.booleanKey]) {
+                        if (!inventory[info.booleanKey] && !inventory.noDeathMarks) {
                             const numberKey = info.numberKey;
                             inventory[numberKey] ??= 0;
                             inventory[numberKey] += clientProgress.AttackerScore + clientProgress.DefenderScore;
@@ -1021,6 +1033,8 @@ interface AddMissionRewardsReturnType {
     AffiliationMods: IAffiliationMods[];
     SyndicateXPItemReward?: number;
     ConquestCompletedMissionsCount?: number;
+    NemesisTaxInfo?: INemesisTaxInfo;
+    RecoveredItemInfo?: IRecoveredItemInfo;
 }
 
 interface IConquestReward {
@@ -1184,6 +1198,7 @@ export const addMissionRewards = async (
     {
         wagerTier: wagerTier,
         Nemesis: nemesis,
+        NemesisKillConvert: NemesisKillConvert,
         RewardInfo: rewardInfo,
         LevelKeyName: levelKeyName,
         Missions: missions,
@@ -1194,7 +1209,8 @@ export const addMissionRewards = async (
         AffiliationChanges: AffiliationMods,
         InvasionProgress: invasionProgress,
         EndOfMatchUpload: endOfMatchUpload,
-        GoalTag: goalTag
+        GoalTag: goalTag,
+        ChallengeInstanceStates: challengeInstanceStates
     }: IMissionInventoryUpdateRequest,
     firstCompletion: boolean
 ): Promise<AddMissionRewardsReturnType> => {
@@ -1323,6 +1339,13 @@ export const addMissionRewards = async (
                 });
             }
         }
+        if (fixedLevelRewards.levelMission) {
+            const levelCreditReward = getLevelCreditRewards(fixedLevelRewards.levelMission);
+            if (levelCreditReward) {
+                missionCompletionCredits += levelCreditReward;
+                logger.debug(`levelCreditReward ${levelCreditReward}`);
+            }
+        }
     }
 
     // ignoring tags not in ExportRegions, because it can just be garbage:
@@ -1334,8 +1357,10 @@ export const addMissionRewards = async (
         //node based credit rewards for mission completion
         if (isEligibleForCreditReward(rewardInfo, missions, node)) {
             const levelCreditReward = getLevelCreditRewards(node);
-            missionCompletionCredits += levelCreditReward;
-            logger.debug(`levelCreditReward ${levelCreditReward}`);
+            if (levelCreditReward) {
+                missionCompletionCredits += levelCreditReward;
+                logger.debug(`levelCreditReward ${levelCreditReward}`);
+            }
         }
 
         if (node.missionReward) {
@@ -1452,12 +1477,11 @@ export const addMissionRewards = async (
         }
     }
 
+    let nodeControlledByNemesis = false;
     if (inventory.Nemesis) {
-        if (
-            nemesis ||
-            (inventory.Nemesis.Faction == "FC_INFESTATION" &&
-                inventory.Nemesis.InfNodes.find(obj => obj.Node == rewardInfo.node))
-        ) {
+        nodeControlledByNemesis = inventory.Nemesis.InfNodes.some(obj => obj.Node == rewardInfo.node);
+
+        if (nemesis || (inventory.Nemesis.Faction == "FC_INFESTATION" && nodeControlledByNemesis)) {
             inventoryChanges.Nemesis ??= {};
             const nodeIndex = inventory.Nemesis.InfNodes.findIndex(obj => obj.Node === rewardInfo.node);
             if (nodeIndex !== -1) inventory.Nemesis.InfNodes.splice(nodeIndex, 1);
@@ -1609,6 +1633,37 @@ export const addMissionRewards = async (
         rngRewardCredits: inventoryChanges.RegularCredits ?? 0
     });
 
+    const NemesisTaxInfo: INemesisTaxInfo | undefined = nodeControlledByNemesis
+        ? getNemesisTaxInfo(inventory.Nemesis!)
+        : undefined;
+    if (NemesisTaxInfo) {
+        const taxedCredits = Math.round(credits.TotalCredits[0] * NemesisTaxInfo.TaxRate);
+        NemesisTaxInfo.TaxedCredits = taxedCredits;
+        inventory.RegularCredits -= taxedCredits;
+        inventoryChanges.RegularCredits ??= 0;
+        inventoryChanges.RegularCredits -= taxedCredits;
+        credits.TotalCredits[1] -= taxedCredits;
+        inventory.NemesisTaxedCredits ??= 0;
+        inventory.NemesisTaxedCredits += taxedCredits;
+    }
+
+    const RecoveredItemInfo: IRecoveredItemInfo | undefined = NemesisKillConvert
+        ? { RecoveredMiscItems: [] }
+        : undefined;
+    if (RecoveredItemInfo) {
+        if (inventory.NemesisTaxedCredits) {
+            RecoveredItemInfo.RecoveredCredits = inventory.NemesisTaxedCredits;
+            inventory.RegularCredits += inventory.NemesisTaxedCredits;
+            inventoryChanges.RegularCredits ??= 0;
+            inventoryChanges.RegularCredits += inventory.NemesisTaxedCredits;
+            credits.TotalCredits[0] += inventory.NemesisTaxedCredits;
+            credits.TotalCredits[1] += inventory.NemesisTaxedCredits;
+            credits.CreditsBonus[0] += inventory.NemesisTaxedCredits;
+            credits.CreditsBonus[1] += inventory.NemesisTaxedCredits;
+            inventory.NemesisTaxedCredits = undefined;
+        }
+    }
+
     if (strippedItems) {
         if (endOfMatchUpload) {
             for (const si of strippedItems) {
@@ -1684,13 +1739,35 @@ export const addMissionRewards = async (
         }
     }
 
+    if (challengeInstanceStates) {
+        inventory.ChallengeInstanceStates ??= [];
+        for (const challenge of challengeInstanceStates) {
+            const inventoryState = inventory.ChallengeInstanceStates.find(
+                c => toOid2(c._id, account.BuildLabel) == challenge.id
+            );
+            if (inventoryState) {
+                inventoryState.Progress = challenge.Progress;
+                inventoryState.IsRewardCollected = challenge.IsRewardCollected;
+            } else {
+                inventory.ChallengeInstanceStates.push({
+                    params: challenge.params,
+                    Progress: challenge.Progress,
+                    IsRewardCollected: challenge.IsRewardCollected,
+                    _id: toObjectId(fromOid(challenge.id))
+                });
+            }
+        }
+    }
+
     return {
         inventoryChanges,
         MissionRewards,
         credits,
         AffiliationMods,
         SyndicateXPItemReward,
-        ConquestCompletedMissionsCount
+        ConquestCompletedMissionsCount,
+        NemesisTaxInfo,
+        RecoveredItemInfo
     };
 };
 
@@ -1772,11 +1849,12 @@ export const addFixedLevelRewards = (
         }
     }
     if (rewards.droptable) {
-        if (rewards.droptable in ExportRewards) {
+        const metaDroptable = getMissionDeck(rewards.droptable);
+        if (metaDroptable) {
             const rotations: number[] = rewardInfo ? getRotations(rewardInfo) : [0];
             logger.debug(`rolling ${rewards.droptable} for level key rewards`, { rotations });
             for (const tier of rotations) {
-                const reward = getRandomRewardByChance(ExportRewards[rewards.droptable][tier]);
+                const reward = getRandomRewardByChance(metaDroptable[tier]);
                 if (reward) {
                     MissionRewards.push({
                         StoreItem: reward.type,
@@ -1791,10 +1869,9 @@ export const addFixedLevelRewards = (
     return missionBonusCredits;
 };
 
-function getLevelCreditRewards(node: IRegion): number {
-    const minEnemyLevel = node.minEnemyLevel;
-
-    return 1000 + (minEnemyLevel - 1) * 100;
+function getLevelCreditRewards(node: Partial<IRegion>): number | undefined {
+    if (node.minEnemyLevel) return 1000 + (node.minEnemyLevel - 1) * 100;
+    return undefined;
 
     //TODO: get dark sektor fixed credit rewards and railjack bonus
 }
@@ -2221,17 +2298,25 @@ function getRandomMissionDrops(
                     }
                 }
                 if (currentMissionKey) {
-                    const keyMeta = ExportKeys[currentMissionKey];
-                    if (keyMeta.cacheRewardManifest) {
-                        const deck = ExportRewards[keyMeta.cacheRewardManifest];
-                        for (let rotation = 0; rotation != RewardInfo.EnemyCachesFound; ++rotation) {
-                            const drop = getRandomRewardByChance(deck[rotation]);
-                            if (drop) {
-                                drops.push({
-                                    StoreItem: drop.type,
-                                    ItemCount: drop.itemCount,
-                                    FromEnemyCache: true
-                                });
+                    const keyMeta = getKey(currentMissionKey);
+                    if (!keyMeta) {
+                        logger.error(`unknown levelKey ${currentMissionKey} while proccesing EnemyCachesFound`);
+                    } else if (keyMeta.cacheRewardManifest) {
+                        const deck = getMissionDeck(keyMeta.cacheRewardManifest);
+                        if (!deck) {
+                            logger.error(
+                                `unknown droptable ${keyMeta.cacheRewardManifest} while proccesing EnemyCachesFound`
+                            );
+                        } else {
+                            for (let rotation = 0; rotation != RewardInfo.EnemyCachesFound; ++rotation) {
+                                const drop = getRandomRewardByChance(deck[rotation]);
+                                if (drop) {
+                                    drops.push({
+                                        StoreItem: drop.type,
+                                        ItemCount: drop.itemCount,
+                                        FromEnemyCache: true
+                                    });
+                                }
                             }
                         }
                     }
@@ -2253,17 +2338,23 @@ function getRandomMissionDrops(
                 }
             }
         } else if (levelKeyName) {
-            const keyMeta = ExportKeys[levelKeyName];
-            if (keyMeta.cacheRewardManifest) {
-                const deck = ExportRewards[keyMeta.cacheRewardManifest];
-                for (let rotation = 0; rotation != RewardInfo.EnemyCachesFound; ++rotation) {
-                    const drop = getRandomRewardByChance(deck[rotation]);
-                    if (drop) {
-                        drops.push({
-                            StoreItem: drop.type,
-                            ItemCount: drop.itemCount,
-                            FromEnemyCache: true
-                        });
+            const keyMeta = getKey(levelKeyName);
+            if (!keyMeta) {
+                logger.error(`unknown levelKey ${levelKeyName} while proccesing EnemyCachesFound`);
+            } else if (keyMeta.cacheRewardManifest) {
+                const deck = getMissionDeck(keyMeta.cacheRewardManifest);
+                if (!deck) {
+                    logger.error(`unknown droptable ${keyMeta.cacheRewardManifest} while proccesing EnemyCachesFound`);
+                } else {
+                    for (let rotation = 0; rotation != RewardInfo.EnemyCachesFound; ++rotation) {
+                        const drop = getRandomRewardByChance(deck[rotation]);
+                        if (drop) {
+                            drops.push({
+                                StoreItem: drop.type,
+                                ItemCount: drop.itemCount,
+                                FromEnemyCache: true
+                            });
+                        }
                     }
                 }
             }

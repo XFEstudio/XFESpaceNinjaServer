@@ -72,7 +72,7 @@ import {
     version_compare
 } from "../helpers/inventoryHelpers.ts";
 import { addQuestKey, completeQuest } from "./questService.ts";
-import { handleBundleAcqusition } from "./purchaseService.ts";
+import { handleBundleAcquisition } from "./purchaseService.ts";
 import libraryDailyTasks from "../../static/fixed_responses/libraryDailyTasks.json" with { type: "json" };
 import { generateRewardSeed, getRandomElement, getRandomInt, getRandomWeightedReward, SRng } from "./rngService.ts";
 import type { IMessageCreationTemplate } from "./inboxService.ts";
@@ -88,6 +88,7 @@ import { addString } from "../helpers/stringHelpers.ts";
 import type {
     IEquipmentClient,
     IEquipmentDatabase,
+    IKubrowGenetics,
     IKubrowPetDetailsDatabase,
     ITraits
 } from "../types/equipmentTypes.ts";
@@ -476,7 +477,7 @@ export const addItem = async (
 ): Promise<IInventoryChanges> => {
     // Bundles are technically StoreItems but a) they don't have a normal counterpart, and b) they are used in non-StoreItem contexts, e.g. email attachments.
     if (typeName in ExportBundles) {
-        return await handleBundleAcqusition(typeName, inventory, quantity);
+        return await handleBundleAcquisition(typeName, inventory, quantity, {}, buildLabel);
     }
 
     // Strict typing
@@ -626,7 +627,7 @@ export const addItem = async (
     ) {
         if (targetFingerprint && typeName.startsWith("/Lotus/Upgrades/Mods/Randomized/Raw")) {
             logger.debug(`ignoring fingerprint for raw riven mod`);
-        } else if (targetFingerprint) {
+        } else if (targetFingerprint && targetFingerprint != `{"lvl":0}`) {
             if (quantity != 1) {
                 logger.warn(`adding 1 of ${typeName} ${targetFingerprint} even tho quantity ${quantity} was requested`);
             }
@@ -1004,7 +1005,40 @@ export const addItem = async (
                         typeName.substring(1).split("/")[3] == "CatbrowPet" ||
                         typeName.substring(1).split("/")[3] == "KubrowPet"
                     ) {
-                        if (
+                        if (typeName == "/Lotus/Types/Game/CatbrowPet/VampireKavatTraitPrint") {
+                            const inventoryChanges: IInventoryChanges = {};
+                            for (let i = 0; i != quantity; ++i) {
+                                addKubrowPetPrint(
+                                    inventory,
+                                    typeName,
+                                    {
+                                        Name: "",
+                                        IsMale: false,
+                                        Size: 1,
+                                        DominantTraits: {
+                                            BaseColor: "/Lotus/Types/Game/CatbrowPet/Colors/CatbrowPetColorBaseVampire",
+                                            SecondaryColor:
+                                                "/Lotus/Types/Game/CatbrowPet/Colors/CatbrowPetColorSecondaryVampire",
+                                            TertiaryColor:
+                                                "/Lotus/Types/Game/CatbrowPet/Colors/CatbrowPetColorTertiaryVampire",
+                                            AccentColor:
+                                                "/Lotus/Types/Game/CatbrowPet/Colors/CatbrowPetColorAccentsVampire",
+                                            EyeColor: "/Lotus/Types/Game/CatbrowPet/Colors/CatbrowPetColorEyesVamp",
+                                            FurPattern:
+                                                "/Lotus/Types/Game/CatbrowPet/Patterns/CatbrowPetPatternVampire",
+                                            Personality: "/Lotus/Types/Game/CatbrowPet/VampireCatbrowPetPowerSuit",
+                                            BodyType:
+                                                "/Lotus/Types/Game/CatbrowPet/BodyTypes/CatbrowPetVampireBodyType",
+                                            Head: "/Lotus/Types/Game/CatbrowPet/Heads/CatbrowHeadVampire",
+                                            Tail: "/Lotus/Types/Game/CatbrowPet/Tails/CatbrowTailVampire"
+                                        },
+                                        RecessiveTraits: {}
+                                    },
+                                    inventoryChanges
+                                );
+                            }
+                            return inventoryChanges;
+                        } else if (
                             typeName != "/Lotus/Types/Game/KubrowPet/Eggs/KubrowEgg" &&
                             typeName != "/Lotus/Types/Game/KubrowPet/Eggs/KubrowPetEggItem" &&
                             typeName != "/Lotus/Types/Game/KubrowPet/BlankTraitPrint" &&
@@ -1026,7 +1060,7 @@ export const addItem = async (
                         if (!seed) {
                             throw new Error(`Expected crew member to have a seed`);
                         }
-                        seed |= BigInt(Math.trunc(inventory.Created.getTime() / 1000) & 0xffffff) << 32n;
+                        seed |= BigInt(getAccountRandSeed(inventory)) << 32n;
                         return {
                             ...addCrewMember(inventory, typeName, seed),
                             ...occupySlot(inventory, InventorySlot.CREWMEMBERS, premiumPurchase)
@@ -1049,6 +1083,15 @@ export const addItem = async (
                             );
                         }
                         return addCustomization(inventory, typeName);
+                    } else if (typeName.substring(1).split("/")[3] == "MiscItems") {
+                        const miscItemChanges = [
+                            {
+                                ItemType: typeName,
+                                ItemCount: quantity
+                            } satisfies IMiscItem
+                        ];
+                        addMiscItems(inventory, miscItemChanges);
+                        return { MiscItems: miscItemChanges };
                     }
                     break;
                 }
@@ -1102,6 +1145,22 @@ export const addItem = async (
                                 ItemType: fragmentType
                             }
                         ]);
+                    }
+                    break;
+                case "Keys":
+                    if (typeName.endsWith("Blueprint")) {
+                        const recipeChanges = [
+                            {
+                                ItemType: typeName,
+                                ItemCount: quantity
+                            } satisfies ITypeCount
+                        ];
+                        addRecipes(inventory, recipeChanges);
+                        return { Recipes: recipeChanges };
+                    } else if (typeName.endsWith("Key") || typeName.substring(1).split("/")[3] == "RaidKeys") {
+                        const levelKeyChanges = [{ ItemType: typeName, ItemCount: quantity }];
+                        addLevelKeys(inventory, levelKeyChanges);
+                        return { LevelKeys: levelKeyChanges };
                     }
                     break;
             }
@@ -1491,19 +1550,20 @@ export const addKubrowPet = (
 
 export const addKubrowPetPrint = (
     inventory: TInventoryDatabaseDocument,
-    pet: IEquipmentDatabase,
+    typeName: string,
+    details: IKubrowGenetics,
     inventoryChanges: IInventoryChanges
 ): void => {
     inventoryChanges.KubrowPetPrints ??= [];
     inventoryChanges.KubrowPetPrints.push(
         inventory.KubrowPetPrints[
             inventory.KubrowPetPrints.push({
-                ItemType: "/Lotus/Types/Game/KubrowPet/ImprintedTraitPrint",
-                Name: pet.Details!.Name,
-                IsMale: pet.Details!.IsMale,
-                Size: pet.Details!.Size,
-                DominantTraits: pet.Details!.DominantTraits,
-                RecessiveTraits: pet.Details!.RecessiveTraits
+                ItemType: typeName,
+                Name: details.Name,
+                IsMale: details.IsMale,
+                Size: details.Size,
+                DominantTraits: details.DominantTraits,
+                RecessiveTraits: details.RecessiveTraits
             }) - 1
         ].toJSON<IKubrowPetPrintClient>()
     );
@@ -1522,19 +1582,27 @@ export const updateSlots = (
     }
 };
 
-const isCurrencyTracked = (inventory: TInventoryDatabaseDocument, usePremium: boolean): boolean => {
+export const CurrencyType = {
+    CREDITS: false,
+    PLATINUM: true,
+    PAID_PLATINUM: 2
+} as const;
+
+type TCurrencyType = (typeof CurrencyType)[keyof typeof CurrencyType];
+
+const isCurrencyTracked = (inventory: TInventoryDatabaseDocument, usePremium: TCurrencyType): boolean => {
     return usePremium ? !inventory.infinitePlatinum : !inventory.infiniteCredits;
 };
 
 export const updateCurrency = (
     inventory: TInventoryDatabaseDocument,
     price: number,
-    usePremium: boolean,
+    currencyType: TCurrencyType,
     inventoryChanges: IInventoryChanges = {}
 ): IInventoryChanges => {
-    if (price != 0 && isCurrencyTracked(inventory, usePremium)) {
-        if (usePremium) {
-            if (price > 0 && inventory.PremiumCreditsFree > 0) {
+    if (price != 0 && isCurrencyTracked(inventory, currencyType)) {
+        if (currencyType != CurrencyType.CREDITS) {
+            if (price > 0 && inventory.PremiumCreditsFree > 0 && currencyType != CurrencyType.PAID_PLATINUM) {
                 const premiumCreditsFreeDelta = Math.min(price, inventory.PremiumCreditsFree) * -1;
                 inventoryChanges.PremiumCreditsFree ??= 0;
                 inventoryChanges.PremiumCreditsFree += premiumCreditsFreeDelta;
@@ -1898,7 +1966,11 @@ const addDrone = (
     return inventoryChanges;
 };
 
-/*const getCrewMemberSkills = (seed: bigint, skillPointsToAssign: number): Record<string, number> => {
+export const getAccountRandSeed = (inventory: TInventoryDatabaseDocument): number => {
+    return parseInt(inventory.accountOwnerId.toString().substring(2, 8), 16);
+};
+
+export const getCrewMemberSkills = (seed: bigint, skillPointsToAssign: number): Record<string, number> => {
     const rng = new SRng(seed);
 
     const skills = ["PILOTING", "GUNNERY", "ENGINEERING", "COMBAT", "SURVIVABILITY"];
@@ -1928,7 +2000,7 @@ const addDrone = (
         combined[skills[i]] = skillAssignments[i];
     }
     return combined;
-};*/
+};
 
 const addCrewMember = (
     inventory: TInventoryDatabaseDocument,
@@ -2644,6 +2716,13 @@ export const cleanupInventory = async (inventory: TInventoryDatabaseDocument): P
         }
         if (fixed) {
             logger.debug(`fixed ${fixed} invalid skin upgrade ids`);
+        }
+    }
+
+    for (const pet of inventory.KubrowPets) {
+        if (!pet.Details) {
+            logger.debug(`removing invalid pet ${pet.ItemType} (${pet._id.toString()})`);
+            inventory.KubrowPets.pull({ _id: pet._id });
         }
     }
 };

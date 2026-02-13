@@ -18,6 +18,10 @@ import type {
     IInventoryClient,
     INemesisClient,
     INemesisDatabase,
+    IRecentVendorPurchaseClient,
+    IRecentVendorPurchaseDatabase,
+    IVendorPurchaseHistoryEntryClient,
+    IVendorPurchaseHistoryEntryDatabase,
     IPendingRecipeClient,
     IPendingRecipeDatabase,
     IQuestKeyClient,
@@ -26,7 +30,9 @@ import type {
     IUpgradeClient,
     IUpgradeDatabase,
     IWeaponSkinClient,
-    IWeaponSkinDatabase
+    IWeaponSkinDatabase,
+    IPeriodicMissionCompletionResponse,
+    IPeriodicMissionCompletionDatabase
 } from "../types/inventoryTypes/inventoryTypes.ts";
 import { equipmentKeys } from "../types/inventoryTypes/inventoryTypes.ts";
 import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
@@ -37,21 +43,22 @@ import type {
     ILoadOutPresets
 } from "../types/saveLoadoutTypes.ts";
 import { slotNames } from "../types/purchaseTypes.ts";
-import type {
-    ICrewShipMemberClient,
-    ICrewShipMemberDatabase,
-    ICrewShipMembersClient,
-    ICrewShipMembersDatabase,
-    ICrewShipWeaponClient,
-    ICrewShipWeaponDatabase,
-    ICrewShipWeaponEmplacementsClient,
-    ICrewShipWeaponEmplacementsDatabase,
-    IEquipmentClient,
-    IEquipmentDatabase,
-    IEquipmentSelectionClient,
-    IEquipmentSelectionDatabase,
-    IKubrowPetDetailsClient,
-    IKubrowPetDetailsDatabase
+import {
+    Status,
+    type ICrewShipMemberClient,
+    type ICrewShipMemberDatabase,
+    type ICrewShipMembersClient,
+    type ICrewShipMembersDatabase,
+    type ICrewShipWeaponClient,
+    type ICrewShipWeaponDatabase,
+    type ICrewShipWeaponEmplacementsClient,
+    type ICrewShipWeaponEmplacementsDatabase,
+    type IEquipmentClient,
+    type IEquipmentDatabase,
+    type IEquipmentSelectionClient,
+    type IEquipmentSelectionDatabase,
+    type IKubrowPetDetailsClient,
+    type IKubrowPetDetailsDatabase
 } from "../types/equipmentTypes.ts";
 import type {
     IApartmentClient,
@@ -76,6 +83,8 @@ import type {
     ITailorShopDatabase
 } from "../types/personalRoomsTypes.ts";
 import { fromMongoDate } from "../helpers/inventoryHelpers.ts";
+import { getRecipe } from "./itemDataService.ts";
+import { logger } from "../utils/logger.ts";
 
 const convertDate = (value: IMongoDate): Date => {
     return new Date(parseInt(value.$date.$numberLong));
@@ -235,6 +244,20 @@ const convertQuestKey = (client: IQuestKeyClient): IQuestKeyDatabase => {
     };
 };
 
+const convertRecentVendorPurchases = (client: IRecentVendorPurchaseClient): IRecentVendorPurchaseDatabase => {
+    return {
+        ...client,
+        PurchaseHistory: client.PurchaseHistory.map(convertPurchaseHistory)
+    };
+};
+
+const convertPurchaseHistory = (client: IVendorPurchaseHistoryEntryClient): IVendorPurchaseHistoryEntryDatabase => {
+    return {
+        ...client,
+        Expiry: convertDate(client.Expiry)
+    };
+};
+
 const convertPendingRecipe = (client: IPendingRecipeClient): IPendingRecipeDatabase => {
     return {
         ...client,
@@ -261,6 +284,15 @@ const convertItemConfig = <T extends IItemConfig>(client: T): T => {
         facial: Array.isArray(client.facial) ? {} : client.facial,
         cloth: Array.isArray(client.cloth) ? {} : client.cloth,
         syancol: Array.isArray(client.syancol) ? {} : client.syancol
+    };
+};
+
+const convertPeriodicMissionCompletion = (
+    client: IPeriodicMissionCompletionResponse
+): IPeriodicMissionCompletionDatabase => {
+    return {
+        ...client,
+        date: convertDate(client.date)
     };
 };
 
@@ -377,13 +409,17 @@ export const importInventory = (db: TInventoryDatabaseDocument, client: Partial<
         "EquippedGear",
         "EquippedEmotes",
         "NodeIntrosCompleted",
+        "CompletedAlerts",
+        "CompletedSyndicates",
         "DeathMarks",
+        "UsedDailyDeals",
         "Wishlist",
         "NemesisAbandonedRewards",
         //"OneTimePurchases", // TODO: Import Antiques
         "EntratiLabConquestActiveFrameVariants",
         "EchoesHexConquestActiveFrameVariants",
-        "EchoesHexConquestActiveStickers"
+        "EchoesHexConquestActiveStickers",
+        "ClaimedJunctionChallengeRewards"
     ] as const) {
         if (client[key] !== undefined) {
             db[key] = client[key];
@@ -447,6 +483,9 @@ export const importInventory = (db: TInventoryDatabaseDocument, client: Partial<
     if (client.LastRegionPlayed !== undefined) {
         db.LastRegionPlayed = client.LastRegionPlayed;
     }
+    if (client.RecentVendorPurchases !== undefined) {
+        db.RecentVendorPurchases = client.RecentVendorPurchases.map(convertRecentVendorPurchases);
+    }
     if (client.PendingRecipes !== undefined) {
         replaceArray<IPendingRecipeDatabase>(db.PendingRecipes, client.PendingRecipes.map(convertPendingRecipe));
     }
@@ -498,6 +537,9 @@ export const importInventory = (db: TInventoryDatabaseDocument, client: Partial<
     if (client.Missions !== undefined) {
         db.Missions = client.Missions;
     }
+    if (client.PeriodicMissionCompletions !== undefined) {
+        db.PeriodicMissionCompletions = client.PeriodicMissionCompletions.map(convertPeriodicMissionCompletion);
+    }
     if (client.FlavourItems !== undefined) {
         db.FlavourItems.splice(0, db.FlavourItems.length);
         client.FlavourItems.forEach(x => {
@@ -511,6 +553,17 @@ export const importInventory = (db: TInventoryDatabaseDocument, client: Partial<
     }
     if (client.Boosters !== undefined) {
         replaceArray<IBooster>(db.Boosters, client.Boosters);
+    }
+
+    // Final sanity check over data
+    for (const pr of db.PendingRecipes) {
+        const recipe = getRecipe(pr.ItemType);
+        if (recipe?.secretIngredientAction == "SIA_CREATE_KUBROW" && !pr.KubrowPet) {
+            pr.KubrowPet = db.KubrowPets.find(x => x.Details!.Status == Status.StatusIncubating)?._id;
+            logger.debug(
+                `importing an incubating pet; associating pet ${pr.KubrowPet?.toString()} with recipe ${pr._id.toString()} (${pr.ItemType})`
+            );
+        }
     }
 };
 

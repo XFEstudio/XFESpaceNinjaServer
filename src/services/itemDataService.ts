@@ -1,11 +1,15 @@
 import type { IKeyChainRequest } from "../types/requestTypes.ts";
 import type {
+    IBoosterPack,
+    IBundle,
     IDefaultUpgrade,
     IInboxMessage,
     IKey,
     IMissionReward,
     IRecipe,
+    IRegion,
     ISyndicate,
+    TMissionDeck,
     TReward
 } from "warframe-public-export-plus";
 import {
@@ -25,16 +29,20 @@ import {
     dict_uk,
     dict_zh,
     ExportArcanes,
+    ExportBoosterPacks,
     ExportBoosters,
     ExportBundles,
+    ExportCreditBundles,
     ExportCustoms,
     ExportDojoRecipes,
     ExportDrones,
+    ExportFlavour,
     ExportGear,
     ExportKeys,
     ExportRailjackWeapons,
     ExportRecipes,
     ExportResources,
+    ExportRewards,
     ExportSentinels,
     ExportSyndicates,
     ExportWarframes,
@@ -89,6 +97,346 @@ export const getRecipe = (uniqueName: string): IRecipe | undefined => {
             ],
             excludeFromMarket: true,
             tradable: false
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/GrineerRaidKeyBlueprint") {
+        // The Law of Retribution raid bp. Removed in 22.14.0
+        return {
+            resultType: "/Lotus/Types/Keys/RaidKeys/Raid01Stage01KeyItem",
+            buildPrice: 5000,
+            buildTime: 21600,
+            skipBuildTimePrice: 15,
+            consumeOnUse: false,
+            num: 1,
+            codexSecret: false,
+            ingredients: [
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Rubedo",
+                    ItemCount: 500
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Nanospores",
+                    ItemCount: 9000
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Gallium",
+                    ItemCount: 1
+                }
+            ],
+            excludeFromMarket: true,
+            tradable: false,
+            creditsCost: 100000
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/NightmareGrineerRaidKeyBlueprint") {
+        // The Law of Retribution (Nightmare) raid bp. Removed in 22.14.0
+        return {
+            resultType: "/Lotus/Types/Keys/RaidKeys/Raid01Stage01NightmareKeyItem",
+            buildPrice: 5000,
+            buildTime: 21600,
+            skipBuildTimePrice: 15,
+            consumeOnUse: false,
+            num: 1,
+            codexSecret: false,
+            ingredients: [
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Rubedo",
+                    ItemCount: 1000
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Nanospores",
+                    ItemCount: 18000
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Gallium",
+                    ItemCount: 2
+                }
+            ],
+            excludeFromMarket: true,
+            tradable: false,
+            creditsCost: 100000
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/GolemRaidKeyBlueprint") {
+        // The Jordas Verdict raid bp. Removed in 22.14.0
+        return {
+            resultType: "/Lotus/Types/Keys/RaidKeys/RaidGolemStage01KeyItem",
+            buildPrice: 5000,
+            buildTime: 21600,
+            skipBuildTimePrice: 15,
+            consumeOnUse: false,
+            num: 1,
+            codexSecret: false,
+            ingredients: [
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Plastids",
+                    ItemCount: 2000
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Nanospores",
+                    ItemCount: 12000
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Neurode",
+                    ItemCount: 2
+                }
+            ],
+            excludeFromMarket: true,
+            tradable: false,
+            creditsCost: 100000
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/GolemKeyBlueprint") {
+        // Orokin Derelict Assassination bp for Lephantis. Removed in 28.3.0
+        return {
+            resultType: "/Lotus/Types/Keys/DerelictGolemKey",
+            buildPrice: 7500,
+            buildTime: 3600,
+            skipBuildTimePrice: 10,
+            consumeOnUse: false,
+            num: 1,
+            codexSecret: false,
+            ingredients: [
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/BossNavCode",
+                    ItemCount: 5
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Nanospores",
+                    ItemCount: 4000
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Salvage",
+                    ItemCount: 1000
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Circuits",
+                    ItemCount: 100
+                }
+            ],
+            excludeFromMarket: true,
+            tradable: false,
+            creditsCost: 2500
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/DerelictCaptureKeyBlueprint") {
+        // Orokin Derelict Capture bp. Removed in 28.3.0
+        return {
+            resultType: "/Lotus/Types/Keys/DerelictCaptureKey",
+            buildPrice: 6500,
+            buildTime: 60,
+            skipBuildTimePrice: 5,
+            consumeOnUse: false,
+            num: 1,
+            codexSecret: false,
+            ingredients: [
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/NavCode",
+                    ItemCount: 5
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Nanospores",
+                    ItemCount: 2500
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Ferrite",
+                    ItemCount: 750
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Circuits",
+                    ItemCount: 80
+                }
+            ],
+            excludeFromMarket: true,
+            tradable: false,
+            creditsCost: 1500
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/DerelictDefenseKeyBlueprint") {
+        // Orokin Derelict Defense bp. Removed in 28.3.0
+        return {
+            resultType: "/Lotus/Types/Keys/DerelictDefenseKey",
+            buildPrice: 6500,
+            buildTime: 60,
+            skipBuildTimePrice: 5,
+            consumeOnUse: false,
+            num: 1,
+            codexSecret: false,
+            ingredients: [
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/NavCode",
+                    ItemCount: 5
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Nanospores",
+                    ItemCount: 2500
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Salvage",
+                    ItemCount: 750
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/PolymerBundle",
+                    ItemCount: 80
+                }
+            ],
+            excludeFromMarket: true,
+            tradable: false,
+            creditsCost: 1500
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/DerelictExterminateKeyBlueprint") {
+        // Orokin Derelict Exterminate bp. Removed in 28.3.0
+        return {
+            resultType: "/Lotus/Types/Keys/DerelictExterminateKey",
+            buildPrice: 6500,
+            buildTime: 60,
+            skipBuildTimePrice: 5,
+            consumeOnUse: false,
+            num: 1,
+            codexSecret: false,
+            ingredients: [
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/NavCode",
+                    ItemCount: 5
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Nanospores",
+                    ItemCount: 2500
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Salvage",
+                    ItemCount: 750
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Circuits",
+                    ItemCount: 80
+                }
+            ],
+            excludeFromMarket: true,
+            tradable: false,
+            creditsCost: 1500
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/DerelictMobileDefenseKeyBlueprint") {
+        // Orokin Derelict Mobile Defense bp. Removed in 28.3.0
+        return {
+            resultType: "/Lotus/Types/Keys/DerelictMobileDefenseKey",
+            buildPrice: 6500,
+            buildTime: 60,
+            skipBuildTimePrice: 5,
+            consumeOnUse: false,
+            num: 1,
+            codexSecret: false,
+            ingredients: [
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/NavCode",
+                    ItemCount: 5
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Nanospores",
+                    ItemCount: 2500
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Ferrite",
+                    ItemCount: 750
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/PolymerBundle",
+                    ItemCount: 80
+                }
+            ],
+            excludeFromMarket: true,
+            tradable: false,
+            creditsCost: 1500
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/DerelictSabotageKeyBlueprint") {
+        // Orokin Derelict Sabotage bp. Removed in 28.3.0
+        return {
+            resultType: "/Lotus/Types/Keys/DerelictSabotageKey",
+            buildPrice: 6500,
+            buildTime: 60,
+            skipBuildTimePrice: 5,
+            consumeOnUse: false,
+            num: 1,
+            codexSecret: false,
+            ingredients: [
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/NavCode",
+                    ItemCount: 5
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Nanospores",
+                    ItemCount: 2500
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Ferrite",
+                    ItemCount: 750
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/PolymerBundle",
+                    ItemCount: 80
+                }
+            ],
+            excludeFromMarket: true,
+            tradable: false,
+            creditsCost: 1500
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/DerelictSurvivalKeyBlueprint") {
+        // Orokin Derelict Survival bp. Removed in 28.3.0
+        return {
+            resultType: "/Lotus/Types/Keys/DerelictSurvivalKey",
+            buildPrice: 6500,
+            buildTime: 60,
+            skipBuildTimePrice: 5,
+            consumeOnUse: false,
+            num: 1,
+            codexSecret: false,
+            ingredients: [
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/NavCode",
+                    ItemCount: 5
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Nanospores",
+                    ItemCount: 2500
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Salvage",
+                    ItemCount: 750
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/Circuits",
+                    ItemCount: 80
+                }
+            ],
+            excludeFromMarket: true,
+            tradable: false,
+            creditsCost: 1500
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/VeyHekKeyBlueprint") {
+        // Vay Hek Frequency Triangulator (Assassination key) bp. Removed in 15.13.0
+        return {
+            resultType: "/Lotus/Types/Keys/VeyHekKey",
+            buildPrice: 20000,
+            buildTime: 3600,
+            skipBuildTimePrice: 10,
+            consumeOnUse: false,
+            num: 1,
+            codexSecret: false,
+            ingredients: [
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/VayHekCoordinateFragmentA",
+                    ItemCount: 2
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/VayHekCoordinateFragmentB",
+                    ItemCount: 4
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/VayHekCoordinateFragmentC",
+                    ItemCount: 8
+                },
+                {
+                    ItemType: "/Lotus/Types/Items/MiscItems/VayHekCoordinateFragmentD",
+                    ItemCount: 12
+                }
+            ],
+            excludeFromMarket: true,
+            tradable: false,
+            creditsCost: 10000
         };
     }
 
@@ -246,13 +594,14 @@ export const getKeyChainItems = ({ KeyChain, ChainStage }: IKeyChainRequest): st
 export const getLevelKeyRewards = (
     levelKey: string,
     buildLabel: string | undefined
-): { levelKeyRewards?: IMissionReward; levelKeyRewards2?: TReward[] } => {
-    const key = ExportKeys[levelKey] as IKey | undefined;
+): { levelKeyRewards?: IMissionReward; levelKeyRewards2?: TReward[]; levelMission?: Partial<IRegion> } => {
+    const key = getKey(levelKey);
 
     const levelKeyRewards = key?.missionReward;
     let levelKeyRewards2 = key?.rewards;
+    const levelMission = key?.mission;
 
-    if (!levelKeyRewards && !levelKeyRewards2) {
+    if (!levelKeyRewards && !levelKeyRewards2 && !levelMission) {
         logger.warn(
             `Could not find any reward information for ${levelKey}, gonna have to potentially short-change you`
         );
@@ -266,7 +615,8 @@ export const getLevelKeyRewards = (
 
     return {
         levelKeyRewards,
-        levelKeyRewards2
+        levelKeyRewards2,
+        levelMission
     };
 };
 
@@ -373,4 +723,443 @@ export const getProductCategory = (uniqueName: string): string => {
         return ExportWeapons[uniqueName].productCategory;
     }
     throw new Error(`don't know product category of ${uniqueName}`);
+};
+
+export const getBundle = (uniqueName: string, buildLabel: string = ""): IBundle | undefined => {
+    if (buildLabel) {
+        if (
+            uniqueName == "/Lotus/Types/StoreItems/Packages/StalkerPack" &&
+            version_compare(buildLabel, "2024.06.12.18.42") < 0 // < 36.0.0
+        ) {
+            return {
+                name: "/Lotus/Language/Items/StalkerPackName",
+                description: "/Lotus/Language/Items/StalkerPackDesc",
+                icon: "/Lotus/Interface/Icons/StoreIcons/MarketBundles/Weapons/StalkerPack.png",
+                components: [
+                    { typeName: "/Lotus/StoreItems/Weapons/Tenno/Bows/StalkerBow", purchaseQuantity: 1 },
+                    { typeName: "/Lotus/StoreItems/Weapons/Tenno/ThrowingWeapons/StalkerKunai", purchaseQuantity: 1 },
+                    {
+                        typeName: "/Lotus/StoreItems/Weapons/Tenno/Melee/Scythe/StalkerScytheWeapon",
+                        purchaseQuantity: 1
+                    },
+                    {
+                        typeName: "/Lotus/StoreItems/Types/StoreItems/SuitCustomizations/NinjaColourPickerItem",
+                        purchaseQuantity: 1
+                    }
+                ],
+                packageDiscount: 0.059
+            };
+        }
+    }
+
+    return ExportBundles[uniqueName];
+};
+
+export const getBoosterPack = (uniqueName: string, buildLabel: string = ""): IBoosterPack | undefined => {
+    if (
+        version_compare(buildLabel, gameToBuildVersion["18.16.0"]) < 0 &&
+        uniqueName == "/Lotus/Types/BoosterPacks/RandomKey"
+    ) {
+        const boosterPack: IBoosterPack = {
+            name: "/Lotus/Language/Items/RandomKey",
+            description: "/Lotus/Language/Items/RandomKeyDesc",
+            icon: "/Lotus/Interface/Icons/Store/OrokinKey.png",
+            components: [
+                { Item: "/Lotus/Types/Keys/OrokinKeyA", Rarity: "COMMON", Amount: 1 },
+                { Item: "/Lotus/Types/Keys/OrokinKeyB", Rarity: "COMMON", Amount: 1 },
+                { Item: "/Lotus/Types/Keys/OrokinKeyC", Rarity: "UNCOMMON", Amount: 1 },
+                { Item: "/Lotus/Types/Keys/OrokinKeyD", Rarity: "UNCOMMON", Amount: 1 },
+                { Item: "/Lotus/Types/Keys/OrokinKeyE", Rarity: "RARE", Amount: 1 }
+            ],
+            rarityWeightsPerRoll: [
+                { COMMON: 1, UNCOMMON: 0.050000001, RARE: 0.0099999998, LEGENDARY: 0 },
+                { COMMON: 1, UNCOMMON: 0.25, RARE: 0.050000001, LEGENDARY: 0 },
+                { COMMON: 1, UNCOMMON: 0.25, RARE: 0.050000001, LEGENDARY: 0 },
+                { COMMON: 1, UNCOMMON: 0.25, RARE: 0.050000001, LEGENDARY: 0 },
+                { COMMON: 1, UNCOMMON: 0.25, RARE: 0.1, LEGENDARY: 0 }
+            ],
+            canGiveDuplicates: true,
+            platinumCost: 75
+        };
+        if (buildLabel) {
+            if (version_compare(buildLabel, "2013.06.07.23.44") >= 0) {
+                boosterPack.rarityWeightsPerRoll[4] = { COMMON: 0, UNCOMMON: 0, RARE: 1, LEGENDARY: 0 };
+            }
+            if (version_compare(buildLabel, gameToBuildVersion["9.1.2"]) >= 0) {
+                boosterPack.components.push(
+                    { Item: "/Lotus/Types/Keys/OrokinCaptureKeyA", Rarity: "COMMON", Amount: 1 },
+                    { Item: "/Lotus/Types/Keys/OrokinCaptureKeyB", Rarity: "COMMON", Amount: 1 },
+                    { Item: "/Lotus/Types/Keys/OrokinCaptureKeyC", Rarity: "RARE", Amount: 1 },
+                    { Item: "/Lotus/Types/Keys/OrokinMobileDefenseKeyA", Rarity: "COMMON", Amount: 1 },
+                    { Item: "/Lotus/Types/Keys/OrokinMobileDefenseKeyB", Rarity: "UNCOMMON", Amount: 1 },
+                    { Item: "/Lotus/Types/Keys/OrokinMobileDefenseKeyC", Rarity: "RARE", Amount: 1 },
+                    { Item: "/Lotus/Types/Keys/OrokinDefenseKeyA", Rarity: "COMMON", Amount: 1 },
+                    { Item: "/Lotus/Types/Keys/OrokinDefenseKeyB", Rarity: "UNCOMMON", Amount: 1 },
+                    { Item: "/Lotus/Types/Keys/OrokinDefenseKeyC", Rarity: "RARE", Amount: 1 }
+                );
+            }
+            if (version_compare(buildLabel, gameToBuildVersion["10.3.3"]) >= 0) {
+                boosterPack.components.push({
+                    Item: "/Lotus/Types/Keys/OrokinTowerSurvivalT3Key",
+                    Rarity: "UNCOMMON",
+                    Amount: 1
+                });
+            }
+            if (version_compare(buildLabel, gameToBuildVersion["14.0.0"]) >= 0) {
+                boosterPack.components.find(c => c.Item === "/Lotus/Types/Keys/OrokinTowerSurvivalT3Key")!.Rarity =
+                    "RARE";
+                boosterPack.components.push(
+                    { Item: "/Lotus/Types/Keys/OrokinTowerKeys/OrokinTowerCaptureTier4Key", Rarity: "RARE", Amount: 1 },
+                    { Item: "/Lotus/Types/Keys/OrokinTowerKeys/OrokinTowerDefenseTier4Key", Rarity: "RARE", Amount: 1 },
+                    {
+                        Item: "/Lotus/Types/Keys/OrokinTowerKeys/OrokinTowerExterminateTier4Key",
+                        Rarity: "RARE",
+                        Amount: 1
+                    },
+                    {
+                        Item: "/Lotus/Types/Keys/OrokinTowerKeys/OrokinTowerInterceptionTier4Key",
+                        Rarity: "RARE",
+                        Amount: 1
+                    },
+                    {
+                        Item: "/Lotus/Types/Keys/OrokinTowerKeys/OrokinTowerMobileDefenseTier4Key",
+                        Rarity: "RARE",
+                        Amount: 1
+                    },
+                    { Item: "/Lotus/Types/Keys/OrokinTowerKeys/OrokinTowerSurvivalTier4Key", Rarity: "RARE", Amount: 1 }
+                );
+            }
+            if (version_compare(buildLabel, gameToBuildVersion["15.0.6"]) >= 0) {
+                boosterPack.components.push(
+                    {
+                        Item: "/Lotus/Types/Keys/OrokinTowerKeys/OrokinTowerSabotageTier1Key",
+                        Rarity: "COMMON",
+                        Amount: 1
+                    },
+                    {
+                        Item: "/Lotus/Types/Keys/OrokinTowerKeys/OrokinTowerSabotageTier2Key",
+                        Rarity: "UNCOMMON",
+                        Amount: 1
+                    },
+                    {
+                        Item: "/Lotus/Types/Keys/OrokinTowerKeys/OrokinTowerSabotageTier3Key",
+                        Rarity: "RARE",
+                        Amount: 1
+                    },
+                    { Item: "/Lotus/Types/Keys/OrokinTowerKeys/OrokinTowerSabotageTier4Key", Rarity: "RARE", Amount: 1 }
+                );
+            }
+        }
+        return boosterPack;
+    }
+    if (version_compare(buildLabel, gameToBuildVersion["18.18.0"]) < 0) {
+        if (uniqueName == "/Lotus/Types/BoosterPacks/CommonFusionPack") {
+            return {
+                name: "/Lotus/Language/Items/CommonFusionPack",
+                description: "/Lotus/Language/Items/CommonFusionPackDesc",
+                icon: "/Lotus/Interface/Icons/Store/FusionCorePackBronze.png",
+                components: [
+                    { Item: "/Lotus/Upgrades/Mods/Fusers/RareModFuser", Rarity: "RARE", Amount: 1 },
+                    { Item: "/Lotus/Upgrades/Mods/Fusers/UncommonModFuser", Rarity: "UNCOMMON", Amount: 1 },
+                    { Item: "/Lotus/Upgrades/Mods/Fusers/CommonModFuser", Rarity: "COMMON", Amount: 1 }
+                ],
+                rarityWeightsPerRoll: [
+                    { COMMON: 0.60000002, UNCOMMON: 0.40000001, RARE: 0, LEGENDARY: 0 },
+                    { COMMON: 0.60000002, UNCOMMON: 0.40000001, RARE: 0, LEGENDARY: 0 },
+                    { COMMON: 0.5, UNCOMMON: 0.30000001, RARE: 0.2, LEGENDARY: 0 }
+                ],
+                canGiveDuplicates: true,
+                platinumCost: 55
+            };
+        }
+        if (uniqueName == "/Lotus/Types/BoosterPacks/PremiumUncommonFusionPack") {
+            return {
+                name: "/Lotus/Language/Items/PremiumUncommonFusionPack",
+                description: "/Lotus/Language/Items/PremiumUncommonFusionPackDesc",
+                icon: "/Lotus/Interface/Icons/Store/FusionCorePackSilver.png",
+                components: [
+                    { Item: "/Lotus/Upgrades/Mods/Fusers/RareModFuser", Rarity: "RARE", Amount: 1 },
+                    { Item: "/Lotus/Upgrades/Mods/Fusers/UncommonModFuser", Rarity: "UNCOMMON", Amount: 1 },
+                    { Item: "/Lotus/Upgrades/Mods/Fusers/CommonModFuser", Rarity: "COMMON", Amount: 1 }
+                ],
+                rarityWeightsPerRoll: [
+                    { COMMON: 0, UNCOMMON: 1, RARE: 0, LEGENDARY: 0 },
+                    { COMMON: 0.5, UNCOMMON: 0.30000001, RARE: 0.2, LEGENDARY: 0 },
+                    { COMMON: 0.5, UNCOMMON: 0.30000001, RARE: 0.2, LEGENDARY: 0 }
+                ],
+                canGiveDuplicates: true,
+                platinumCost: 70
+            };
+        }
+        if (uniqueName == "/Lotus/Types/BoosterPacks/PremiumRareFusionPack") {
+            return {
+                name: "/Lotus/Language/Items/PremiumRareFusionPack",
+                description: "/Lotus/Language/Items/PremiumRareFusionPackDesc",
+                icon: "/Lotus/Interface/Icons/Store/FusionCorePackGold.png",
+                components: [
+                    { Item: "/Lotus/Upgrades/Mods/Fusers/CommonModFuser", Rarity: "COMMON", Amount: 1 },
+                    { Item: "/Lotus/Upgrades/Mods/Fusers/UncommonModFuser", Rarity: "UNCOMMON", Amount: 1 },
+                    { Item: "/Lotus/Upgrades/Mods/Fusers/RareModFuser", Rarity: "RARE", Amount: 1 }
+                ],
+                rarityWeightsPerRoll: [
+                    { COMMON: 0.5, UNCOMMON: 0.30000001, RARE: 0.2, LEGENDARY: 0 },
+                    { COMMON: 0.5, UNCOMMON: 0.30000001, RARE: 0.2, LEGENDARY: 0 },
+                    { COMMON: 0, UNCOMMON: 0, RARE: 1, LEGENDARY: 0 }
+                ],
+                canGiveDuplicates: true,
+                platinumCost: 80
+            };
+        }
+    }
+
+    return ExportBoosterPacks[uniqueName];
+};
+
+export const getKey = (uniqueName: string): IKey | undefined => {
+    if (
+        uniqueName == "/Lotus/Types/Keys/RaidKeys/Raid01Stage01KeyItem" ||
+        uniqueName == "/Lotus/Types/Keys/RaidKeys/Raid01Stage01NightmareKeyItem"
+    ) {
+        return {
+            name: "/Lotus/Language/Items/GrineerTrialsName",
+            description: "/Lotus/Language/Items/GrineerTrialsDesc",
+            icon: "/Lotus/Interface/Quests/GrineerRaidKeyChain.png",
+            parentName: "/Lotus/Types/Keys/RaidKeys/BaseRaidKey",
+            codexSecret: true,
+            mission: {
+                minEnemyLevel: 70,
+                maxEnemyLevel: 80
+            }
+        };
+    } else if (
+        uniqueName == "/Lotus/Types/Keys/RaidKeys/Raid01Stage02KeyItem" ||
+        uniqueName == "/Lotus/Types/Keys/RaidKeys/Raid01Stage02NightmareKeyItem"
+    ) {
+        return {
+            name: "/Lotus/Language/Items/GrineerTrialsName",
+            description: "/Lotus/Language/Items/GrineerTrialsDesc",
+            icon: "/Lotus/Interface/Quests/GrineerRaidKeyChain.png",
+            parentName: "/Lotus/Types/Keys/RaidKeys/BaseRaidKey",
+            codexSecret: true,
+            mission: {
+                minEnemyLevel: 80,
+                maxEnemyLevel: 90
+            }
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/RaidKeys/Raid01Stage03KeyItem") {
+        return {
+            name: "/Lotus/Language/Items/GrineerTrialsName",
+            description: "/Lotus/Language/Items/GrineerTrialsDesc",
+            icon: "/Lotus/Interface/Quests/GrineerRaidKeyChain.png",
+            parentName: "/Lotus/Types/Keys/RaidKeys/BaseRaidKey",
+            codexSecret: true,
+            missionReward: {
+                credits: 200000,
+                droptable: "/Lotus/Types/Game/MissionDecks/RaidRewards/HekRaid"
+            },
+            mission: {
+                minEnemyLevel: 80,
+                maxEnemyLevel: 100
+            }
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/RaidKeys/Raid01Stage03NightmareKeyItem") {
+        return {
+            name: "/Lotus/Language/Items/GrineerNightmareTrialsName",
+            description: "/Lotus/Language/Items/GrineerTrialsDesc",
+            icon: "/Lotus/Interface/Quests/GrineerRaidKeyChain.png",
+            parentName: "/Lotus/Types/Keys/RaidKeys/BaseRaidKey",
+            codexSecret: true,
+            missionReward: {
+                credits: 250000,
+                droptable: "/Lotus/Types/Game/MissionDecks/RaidRewards/NightmareHekRaid"
+            },
+            mission: {
+                minEnemyLevel: 80,
+                maxEnemyLevel: 100
+            }
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/RaidKeys/RaidGolemStage01KeyItem") {
+        return {
+            name: "/Lotus/Language/Items/GolemTrialsName",
+            description: "/Lotus/Language/Items/GolemTrialsDesc",
+            icon: "/Lotus/Interface/Icons/Store/GolemRaidKey.png",
+            parentName: "/Lotus/Types/Keys/RaidKeys/BaseRaidKey",
+            codexSecret: true,
+            mission: {
+                minEnemyLevel: 86,
+                maxEnemyLevel: 88
+            }
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/RaidKeys/RaidGolemStage02KeyItem") {
+        return {
+            name: "/Lotus/Language/Items/GolemTrialsName",
+            description: "/Lotus/Language/Items/GolemTrialsDesc",
+            icon: "/Lotus/Interface/Icons/Store/GolemRaidKey.png",
+            parentName: "/Lotus/Types/Keys/RaidKeys/BaseRaidKey",
+            codexSecret: true,
+            mission: {
+                minEnemyLevel: 88,
+                maxEnemyLevel: 92
+            }
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/RaidKeys/RaidGolemStage03KeyItem") {
+        return {
+            name: "/Lotus/Language/Items/GolemTrialsName",
+            description: "/Lotus/Language/Items/GolemTrialsDesc",
+            icon: "/Lotus/Interface/Icons/Store/GolemRaidKey.png",
+            parentName: "/Lotus/Types/Keys/RaidKeys/BaseRaidKey",
+            codexSecret: true,
+            missionReward: {
+                credits: 300000,
+                items: ["/Lotus/StoreItems/Upgrades/Mods/FusionBundles/RareFusionBundle"],
+                droptable: "/Lotus/Types/Game/MissionDecks/RaidRewards/GolemRaid"
+            },
+            mission: {
+                minEnemyLevel: 92,
+                maxEnemyLevel: 97
+            }
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/DerelictGolemKey") {
+        return {
+            name: "/Lotus/Language/Items/OrokinDerelictBossKey",
+            description: "/Lotus/Language/Items/OrokinDerelictBossKeyDesc",
+            icon: "/Lotus/Interface/Icons/Store/OrokinDerelictKey.png",
+            parentName: "/Lotus/Types/Game/KeyItems/DerelictKeyItem",
+            codexSecret: false,
+            missionReward: {
+                credits: 7500,
+                droptable: "/Lotus/Types/Game/MissionDecks/GolemMissionRewards"
+            },
+            mission: {
+                minEnemyLevel: 25,
+                maxEnemyLevel: 35
+            }
+        };
+    } else if (uniqueName == "/Lotus/Types/Keys/DerelictSabotageKey") {
+        return {
+            name: "/Lotus/Language/Items/OrokinDerelictSabotageKey",
+            description: "/Lotus/Language/Items/OrokinDerelictSabotageKeyDesc",
+            icon: "/Lotus/Interface/Icons/Store/OrokinDerelictKey.png",
+            parentName: "/Lotus/Types/Game/KeyItems/DerelictKeyItem",
+            codexSecret: false,
+            cacheRewardManifest: "/Lotus/Types/Game/MissionDecks/OrokinDerelictSabotageRewards",
+            mission: {
+                minEnemyLevel: 25,
+                maxEnemyLevel: 35
+            }
+        };
+    } else if (uniqueName.startsWith("/Lotus/Types/Keys/Derelict")) {
+        return {
+            name: "/Lotus/Language/Items/OrokinDerelictCaptureKey",
+            description: "/Lotus/Language/Items/OrokinDerelictCaptureKeyDesc",
+            icon: "/Lotus/Interface/Icons/Store/OrokinDerelictKey.png",
+            parentName: "/Lotus/Types/Game/KeyItems/DerelictKeyItem",
+            codexSecret: false,
+            mission: {
+                minEnemyLevel: 25,
+                maxEnemyLevel: 35
+            }
+        };
+    }
+
+    return ExportKeys[uniqueName];
+};
+
+export const getMissionDeck = (uniqueName: string): TMissionDeck | undefined => {
+    return ExportRewards[uniqueName];
+};
+
+export const getPrice = (
+    storeItemName: string,
+    quantity: number = 1,
+    durability: number = 0,
+    usePremium: boolean,
+    buildLabel: string
+): number => {
+    let price: number | undefined;
+    const isBundle = storeItemName in ExportBundles;
+    const isBooster = storeItemName in ExportBoosters;
+    if (isBooster) {
+        price = 40 * (durability + 1);
+    } else if (isBundle) {
+        const bundle = getBundle(storeItemName, buildLabel)!;
+        if (usePremium && bundle.platinumCost) {
+            price = ExportBundles[storeItemName].platinumCost;
+        } else if (!usePremium && bundle.creditsCost) {
+            price = ExportBundles[storeItemName].creditsCost;
+        } else {
+            let sum = 0;
+            for (const component of bundle.components) {
+                sum += getPrice(
+                    component.typeName,
+                    component.purchaseQuantity,
+                    [3, 7, 30, 90].indexOf(component.durabilityDays ?? 3),
+                    usePremium,
+                    buildLabel
+                );
+            }
+            const discount = typeof bundle.packageDiscount === "number" ? bundle.packageDiscount : 0.25;
+            price = Math.round(sum * (1 - discount));
+        }
+    } else {
+        const internalName = fromStoreItem(storeItemName);
+        const boosterPack = getBoosterPack(fromStoreItem(storeItemName), buildLabel);
+        const isBoosterPack = boosterPack !== undefined;
+        if (isBoosterPack) {
+            if (usePremium) price = boosterPack.platinumCost;
+        } else {
+            const categories = [
+                ExportBundles,
+                ExportCreditBundles,
+                ExportCustoms,
+                ExportFlavour,
+                ExportGear,
+                ExportRecipes,
+                ExportResources,
+                ExportSentinels,
+                ExportWarframes,
+                ExportWeapons
+            ];
+            const category = categories.find(c => internalName in c);
+            if (category) {
+                const item = category[internalName];
+                if (usePremium && "platinumCost" in item) {
+                    price = item.platinumCost;
+                } else if (!usePremium && "creditsCost" in item) {
+                    price = item.creditsCost;
+                }
+            } else {
+                const recipe = getRecipe(internalName);
+                if (recipe) {
+                    if (usePremium && "platinumCost" in recipe) {
+                        price = recipe.platinumCost;
+                    } else if (!usePremium && "creditsCost" in recipe) {
+                        price = recipe.creditsCost;
+                    }
+                }
+            }
+
+            if (usePremium) {
+                if (version_compare(buildLabel, gameToBuildVersion["18.16.0"]) < 0) {
+                    if (internalName == "/Lotus/Powersuits/Mag/Mag") {
+                        price = ExportWarframes["/Lotus/Powersuits/Loki/Loki"].platinumCost;
+                    } else if (internalName == "/Lotus/Powersuits/Loki/Loki") {
+                        price = ExportWarframes["/Lotus/Powersuits/Mag/Mag"].platinumCost;
+                    }
+                }
+                if (version_compare(buildLabel, gameToBuildVersion["18.0.2"]) < 0) {
+                    if (internalName == "/Lotus/Upgrades/Skins/Dragon/DragonAltHelmet") price = 40;
+                }
+            } else {
+                // I'm not sure when they stopped selling it
+                if (storeItemName == "/Lotus/StoreItems/Types/Restoratives/Cipher") price = 250;
+            }
+        }
+    }
+
+    if (price == undefined) {
+        throw new Error(`no price found for ${storeItemName}`);
+    }
+
+    return price * quantity;
 };

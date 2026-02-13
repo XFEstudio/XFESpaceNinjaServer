@@ -4,6 +4,7 @@ import { areFriends } from "../../services/friendService.ts";
 import { createMessage } from "../../services/inboxService.ts";
 import {
     combineInventoryChanges,
+    CurrencyType,
     getEffectiveAvatarImageType,
     getInventory,
     updateCurrency
@@ -15,6 +16,8 @@ import type { IPurchaseParams, IPurchaseResponse } from "../../types/purchaseTyp
 import { PurchaseSource } from "../../types/purchaseTypes.ts";
 import type { RequestHandler } from "express";
 import { ExportBundles, ExportFlavour } from "warframe-public-export-plus";
+import { logger } from "../../utils/logger.ts";
+import { getBundle, getPrice } from "../../services/itemDataService.ts";
 
 const checkPurchaseParams = (params: IPurchaseParams): boolean => {
     switch (params.Source) {
@@ -29,6 +32,16 @@ const checkPurchaseParams = (params: IPurchaseParams): boolean => {
 
 export const giftingController: RequestHandler = async (req, res) => {
     const data = getJSONfromString<IGiftingRequest>(String(req.body));
+    if (!data.PurchaseParams) {
+        const nameParts = String(req.query.productName).split(";");
+        data.PurchaseParams = {
+            Source: PurchaseSource.Market,
+            StoreItem: nameParts[0],
+            Quantity: Number(req.query.quantity),
+            UsePremium: true
+        };
+        if (nameParts[1]) data.PurchaseParams.Durability = Number(nameParts[1]);
+    }
     if (!checkPurchaseParams(data.PurchaseParams)) {
         throw new Error(`unexpected purchase params in gifting request: ${String(req.body)}`);
     }
@@ -76,10 +89,25 @@ export const giftingController: RequestHandler = async (req, res) => {
     if (data.PurchaseParams.Source == PurchaseSource.DailyDeal) {
         await handleDailyDealPurchase(senderInventory, data.PurchaseParams, response);
     } else {
-        updateCurrency(senderInventory, data.PurchaseParams.ExpectedPrice, true, response.InventoryChanges);
+        if (!data.PurchaseParams.ExpectedPrice) {
+            logger.debug(`client didn't provide ExpectedPrice, attempt to get it from PE+`);
+            data.PurchaseParams.ExpectedPrice = getPrice(
+                data.PurchaseParams.StoreItem,
+                data.PurchaseParams.Quantity,
+                data.PurchaseParams.Durability,
+                data.PurchaseParams.UsePremium,
+                data.buildLabel
+            );
+        }
+        updateCurrency(
+            senderInventory,
+            data.PurchaseParams.ExpectedPrice,
+            CurrencyType.PAID_PLATINUM,
+            response.InventoryChanges
+        );
     }
     if (data.PurchaseParams.StoreItem in ExportBundles) {
-        const bundle = ExportBundles[data.PurchaseParams.StoreItem];
+        const bundle = getBundle(data.PurchaseParams.StoreItem, data.buildLabel)!;
         if (bundle.giftingBonus) {
             combineInventoryChanges(
                 response.InventoryChanges,
@@ -118,7 +146,7 @@ export const giftingController: RequestHandler = async (req, res) => {
 };
 
 interface IGiftingRequest {
-    PurchaseParams: IPurchaseParams;
+    PurchaseParams?: IPurchaseParams;
     Message?: string;
     Recipient?: string;
     RecipientId?: IOid;

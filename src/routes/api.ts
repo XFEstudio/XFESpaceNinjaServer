@@ -62,6 +62,7 @@ import { forceRemoveItemController } from "../controllers/api/forceRemoveItemCon
 import { fusionTreasuresController } from "../controllers/api/fusionTreasuresController.ts";
 import { gardeningController } from "../controllers/api/gardeningController.ts";
 import { genericUpdateController } from "../controllers/api/genericUpdateController.ts";
+import { getAccountIdController } from "../controllers/api/getAccountIdController.ts";
 import { getAllianceController } from "../controllers/api/getAllianceController.ts";
 import { getDailyDealStockLevelsController } from "../controllers/api/getDailyDealStockLevelsController.ts";
 import { getFriendsController } from "../controllers/api/getFriendsController.ts";
@@ -108,7 +109,7 @@ import { playedParkourTutorialController } from "../controllers/api/playedParkou
 import { playerSkillsController } from "../controllers/api/playerSkillsController.ts";
 import { postGuildAdvertisementController } from "../controllers/api/postGuildAdvertisementController.ts";
 import { projectionManagerController } from "../controllers/api/projectionManagerController.ts";
-import { purchaseController } from "../controllers/api/purchaseController.ts";
+import { purchaseGetController, purchasePostController } from "../controllers/api/purchaseController.ts";
 import { questControlController } from "../controllers/api/questControlController.ts";
 import { queueDojoComponentDestructionController } from "../controllers/api/queueDojoComponentDestructionController.ts";
 import { redeemPromoCodeController } from "../controllers/api/redeemPromoCodeController.ts";
@@ -190,6 +191,7 @@ apiRouter.get("/changeDojoRoot.php", changeDojoRootController);
 apiRouter.get("/changeGuildRank.php", changeGuildRankController);
 apiRouter.get("/checkDailyMissionBonus.php", checkDailyMissionBonusController);
 apiRouter.get("/checkPendingRecipes.php", checkPendingRecipesController); // U8
+apiRouter.get("/claimCompletedRecipe.php", claimCompletedRecipeController); // U15
 apiRouter.get("/claimLibraryDailyTaskReward.php", claimLibraryDailyTaskRewardController);
 apiRouter.get("/completeCalendarEvent.php", completeCalendarEventController);
 apiRouter.get("/confirmAllianceInvitation.php", confirmAllianceInvitationController);
@@ -224,6 +226,7 @@ apiRouter.get("/marketRecommendations.php", marketRecommendationsController);
 apiRouter.get("/marketSearchRecommendations.php", marketRecommendationsController);
 apiRouter.get("/modularWeaponSale.php", modularWeaponSaleController);
 apiRouter.get("/playedParkourTutorial.php", playedParkourTutorialController);
+apiRouter.get("/purchase.php", purchaseGetController); // U8
 apiRouter.get("/questControl.php", questControlController);
 apiRouter.get("/queueDojoComponentDestruction.php", queueDojoComponentDestructionController);
 apiRouter.get("/removeFriend.php", removeFriendGetController);
@@ -268,6 +271,7 @@ apiRouter.post("/claimJunctionChallengeReward.php", claimJunctionChallengeReward
 apiRouter.post("/clearDialogueHistory.php", clearDialogueHistoryController);
 apiRouter.post("/clearNewEpisodeReward.php", clearNewEpisodeRewardController);
 apiRouter.post("/commitStoryModeDecision.php", commitStoryModeDecisionController); // U14~U15
+apiRouter.post("/completePetStasisRecovery.php", retrievePetFromStasisController); // ~U22
 apiRouter.post("/completeRandomModChallenge.php", completeRandomModChallengeController);
 apiRouter.post("/confirmGuildInvitation.php", confirmGuildInvitationPostController);
 apiRouter.post("/contributeGuildClass.php", contributeGuildClassController);
@@ -295,6 +299,7 @@ apiRouter.post("/forceRemoveItem.php", forceRemoveItemController);
 apiRouter.post("/fusionTreasures.php", fusionTreasuresController);
 apiRouter.post("/gardening.php", gardeningController);
 apiRouter.post("/genericUpdate.php", genericUpdateController);
+apiRouter.post("/getAccountId.php", getAccountIdController);
 apiRouter.post("/getAlliance.php", getAllianceController);
 apiRouter.post("/getFriends.php", getFriendsController);
 apiRouter.post("/getGuildDojo.php", getGuildDojoController);
@@ -329,7 +334,7 @@ apiRouter.post("/placeDecoInComponent.php", placeDecoInComponentController);
 apiRouter.post("/playerSkills.php", playerSkillsController);
 apiRouter.post("/postGuildAdvertisement.php", postGuildAdvertisementController);
 apiRouter.post("/projectionManager.php", projectionManagerController);
-apiRouter.post("/purchase.php", purchaseController);
+apiRouter.post("/purchase.php", purchasePostController);
 apiRouter.post("/questControl.php", questControlController); // U17
 apiRouter.post("/redeemPromoCode.php", redeemPromoCodeController);
 apiRouter.post("/releasePet.php", releasePetController);

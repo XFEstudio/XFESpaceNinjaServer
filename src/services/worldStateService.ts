@@ -202,6 +202,96 @@ const configAlerts: Record<string, IAlert> = {
             minEnemyLevel: 40,
             maxEnemyLevel: 45
         }
+    },
+    dagathAlerts2026Week1: {
+        _id: { $oid: "6949862e3f3f35491e02232c" },
+        Activation: { $date: { $numberLong: "1769022000000" } },
+        Expiry: { $date: { $numberLong: "2000000000000" } },
+        MissionInfo: {
+            location: "SolNode147",
+            missionType: "MT_TERRITORY",
+            faction: "FC_GRINEER",
+            difficulty: 1,
+            missionReward: {
+                credits: 10000,
+                items: ["/Lotus/StoreItems/Types/Recipes/WarframeRecipes/DagathChassisComponent"]
+            },
+            levelOverride: "/Lotus/Levels/Proc/Grineer/GrineerShipyardsInterception",
+            enemySpec: "/Lotus/Types/Game/EnemySpecs/GrineerShipyardsDefenseA",
+            minEnemyLevel: 25,
+            maxEnemyLevel: 35,
+            descText: "/Lotus/Language/Alerts/LotusGiftDesc"
+        },
+        Tag: "LotusGift",
+        ForceUnlock: true
+    },
+    dagathAlerts2026Week2: {
+        _id: { $oid: "6949863a548d83b650011de8" },
+        Activation: { $date: { $numberLong: "1769626800000" } },
+        Expiry: { $date: { $numberLong: "2000000000000" } },
+        MissionInfo: {
+            location: "SolNode404",
+            missionType: "MT_SABOTAGE",
+            faction: "FC_OROKIN",
+            difficulty: 1,
+            missionReward: {
+                credits: 10000,
+                items: ["/Lotus/StoreItems/Types/Recipes/WarframeRecipes/DagathHelmetComponent"]
+            },
+            levelOverride: "/Lotus/Levels/Proc/Orokin/OrokinTowerSabotageForest",
+            enemySpec: "/Lotus/Types/Game/EnemySpecs/OrokinSquadOne",
+            extraEnemySpec: "/Lotus/Types/Game/EnemySpecs/OrokinSabotageGrineerForest",
+            minEnemyLevel: 25,
+            maxEnemyLevel: 35,
+            vipAgent: "/Lotus/Types/Enemies/Grineer/Vip/JetpackSisters/JetpackSisters",
+            descText: "/Lotus/Language/Alerts/LotusGiftDesc"
+        },
+        Tag: "LotusGift",
+        ForceUnlock: true
+    },
+    dagathAlerts2026Week3: {
+        _id: { $oid: "69498642a0836c98e10f5e34" },
+        Activation: { $date: { $numberLong: "1770231600000" } },
+        Expiry: { $date: { $numberLong: "2000000000000" } },
+        MissionInfo: {
+            location: "SolNode100",
+            missionType: "MT_SURVIVAL",
+            faction: "FC_CORPUS",
+            difficulty: 1,
+            missionReward: {
+                credits: 10000,
+                items: ["/Lotus/StoreItems/Types/Recipes/WarframeRecipes/DagathSystemsComponent"]
+            },
+            levelOverride: "/Lotus/Levels/Proc/Corpus/CorpusGasCitySurvival",
+            enemySpec: "/Lotus/Types/Game/EnemySpecs/CorpusGasSurvival",
+            minEnemyLevel: 25,
+            maxEnemyLevel: 35,
+            descText: "/Lotus/Language/Alerts/LotusGiftDesc"
+        },
+        Tag: "LotusGift",
+        ForceUnlock: true
+    },
+    dagathAlerts2026Week4: {
+        _id: { $oid: "69498623a7342ab1500cc99b" },
+        Activation: { $date: { $numberLong: "1768417200000" } },
+        Expiry: { $date: { $numberLong: "2000000000000" } },
+        MissionInfo: {
+            location: "SolNode103",
+            missionType: "MT_EXTERMINATION",
+            faction: "FC_GRINEER",
+            difficulty: 1,
+            missionReward: {
+                credits: 10000,
+                items: ["/Lotus/StoreItems/Types/Recipes/WarframeRecipes/DagathBlueprint"]
+            },
+            levelOverride: "/Lotus/Levels/Proc/Grineer/GrineerAsteroidExterminate",
+            enemySpec: "/Lotus/Types/Game/EnemySpecs/GrineerExterminateBlades",
+            minEnemyLevel: 25,
+            maxEnemyLevel: 35,
+            descText: "/Lotus/Language/Alerts/LotusGiftDesc"
+        },
+        Tag: "LotusGift",
+        ForceUnlock: true
     }
 };
 
@@ -3181,6 +3271,68 @@ export const getWorldState = (buildLabel?: string): IWorldState => {
         });
     }
 
+    if (config.worldState?.scarletSpear) {
+        worldState.Goals.push({
+            _id: {
+                $oid: "5e7a3e2389e3090b0c6a998b"
+            },
+            Activation: {
+                $date: {
+                    $numberLong: "1585070400000"
+                }
+            },
+            Expiry: {
+                $date: {
+                    $numberLong: "2000000000000"
+                }
+            },
+            Node: "ScenarioEventHub5",
+            Desc: "/Lotus/Language/G1Quests/FlotillaOperation",
+            Icon: "/Lotus/Interface/Graphics/ScarletSpear/ScarletSpearIcon.png",
+            Tag: "SquadLinkEvent",
+            ScoreVar: "ScenarioScore",
+            Personal: true,
+            Metadata:
+                '{"progressReq":100,"duration":180,"cooldown":10,"groundTiers":[1000,3000,5000],"spaceTiers":[1000,3000,5000]}',
+            CompletionBonus: [0, 2000, 6000, 10000],
+            InterimGoals: [10000, 30000],
+            InterimRewards: [
+                {
+                    items: ["/Lotus/StoreItems/Upgrades/Skins/Clan/ScarletSpear/ScarletSpearOperationIEmblem"]
+                },
+                {
+                    items: ["/Lotus/StoreItems/Upgrades/Skins/Clan/ScarletSpear/ScarletSpearOperationIIEmblem"]
+                }
+            ],
+            Goal: 50000,
+            Reward: {
+                items: ["/Lotus/StoreItems/Upgrades/Skins/Clan/ScarletSpear/ScarletSpearOperationIIIEmblem"]
+            },
+            AltExpiry: {
+                $date: {
+                    $numberLong: "2000000000000"
+                }
+            },
+            AltActivation: {
+                $date: {
+                    $numberLong: "2000000000000"
+                }
+            },
+            EpochNum: 114,
+            NextAltActivation: {
+                $date: {
+                    $numberLong: "2000000000000"
+                }
+            },
+            NextAltExpiry: {
+                $date: {
+                    $numberLong: "2000000000000"
+                }
+            },
+            PauseAutoScheduling: true
+        });
+    }
+
     if (
         config.worldState?.orphixVenom &&
         buildLabel &&
@@ -3383,12 +3535,13 @@ export const getWorldState = (buildLabel?: string): IWorldState => {
     if (nightwaveSyndicateTag) {
         const nightwaveStartTimestamp = nightwaveTagToActivation[nightwaveSyndicateTag] ?? 1747851300000;
         const nightwaveSeason = nightwaveTagToSeason[nightwaveSyndicateTag];
+        const nightwaveEpisode = ([0, 2, 4].includes(nightwaveSeason) && config.worldState?.nightwaveEpisode) || 1;
         worldState.SeasonInfo = {
             Activation: { $date: { $numberLong: nightwaveStartTimestamp.toString() } },
             Expiry: { $date: { $numberLong: "2000000000000" } },
             AffiliationTag: nightwaveSyndicateTag,
             Season: nightwaveSeason,
-            Phase: 0,
+            Phase: nightwaveEpisode - 1,
             Params: "",
             ActiveChallenges: []
         };
@@ -4054,6 +4207,9 @@ export const getNightwaveSyndicateTag = (buildLabel: string | undefined): string
         if (config.worldState.nightwaveOverride in nightwaveTagToSeason) {
             return config.worldState.nightwaveOverride;
         }
+        if (config.worldState.nightwaveOverride == "disable") {
+            return undefined;
+        }
         logger.warn(`ignoring invalid config value for worldState.nightwaveOverride`, {
             value: config.worldState.nightwaveOverride,
             valid_values: Object.keys(nightwaveTagToSeason)
@@ -4074,10 +4230,13 @@ export const getNightwaveSyndicateTag = (buildLabel: string | undefined): string
     if (version_compare(buildLabel, gameToBuildVersion["35.5.9"]) >= 0) {
         return "RadioLegionIntermission10Syndicate";
     }
+    if (version_compare(buildLabel, gameToBuildVersion["34.0.8"]) >= 0) {
+        return "RadioLegionIntermission9Syndicate";
+    }
     return undefined;
 };
 
-const nightwaveTagToSeason: Record<string, number> = {
+export const nightwaveTagToSeason: Record<string, number> = {
     RadioLegionIntermission14Syndicate: 16, // Nora's Mix: Dreams of the Dead
     RadioLegionIntermission13Syndicate: 15, // Nora's Mix Vol. 9
     RadioLegionIntermission12Syndicate: 14, // Nora's Mix Vol. 8

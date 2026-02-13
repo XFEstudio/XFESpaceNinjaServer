@@ -2,6 +2,7 @@ import { getSubstringFromKeyword } from "../helpers/stringHelpers.ts";
 import {
     addBooster,
     addItem,
+    addItems,
     addMiscItems,
     combineInventoryChanges,
     updateCurrency,
@@ -21,7 +22,6 @@ import { PurchaseSource } from "../types/purchaseTypes.ts";
 import { logger } from "../utils/logger.ts";
 import { getWorldState } from "./worldStateService.ts";
 import {
-    ExportBoosterPacks,
     ExportBoosters,
     ExportBundles,
     ExportCreditBundles,
@@ -31,7 +31,7 @@ import {
     ExportVendors
 } from "warframe-public-export-plus";
 import type { TInventoryDatabaseDocument } from "../models/inventoryModels/inventoryModel.ts";
-import { fromStoreItem, toStoreItem } from "./itemDataService.ts";
+import { fromStoreItem, getBoosterPack, getBundle, getPrice, toStoreItem } from "./itemDataService.ts";
 import { DailyDeal } from "../models/worldStateModel.ts";
 import { fromMongoDate, toMongoDate } from "../helpers/inventoryHelpers.ts";
 import { Guild } from "../models/guildModel.ts";
@@ -114,7 +114,7 @@ export const handlePurchase = async (
     const prePurchaseInventoryChanges: IInventoryChanges = {};
     let seed: bigint | undefined;
     if (purchaseRequest.PurchaseParams.Source == PurchaseSource.Vendor) {
-        let manifest = getVendorManifestByOid(purchaseRequest.PurchaseParams.SourceId!);
+        let manifest = getVendorManifestByOid(purchaseRequest.PurchaseParams.SourceId!, purchaseRequest.buildLabel);
         if (manifest) {
             manifest = applyStandingToVendorManifest(manifest, inventory.Affiliations);
             let ItemId: string | undefined;
@@ -130,12 +130,22 @@ export const handlePurchase = async (
             }
             if (!inventory.dontSubtractPurchaseCreditCost) {
                 if (offer.RegularPrice) {
-                    updateCurrency(inventory, offer.RegularPrice[0], false, prePurchaseInventoryChanges);
+                    updateCurrency(
+                        inventory,
+                        offer.RegularPrice[0] * purchaseRequest.PurchaseParams.Quantity,
+                        false,
+                        prePurchaseInventoryChanges
+                    );
                 }
             }
             if (!inventory.dontSubtractPurchasePlatinumCost) {
                 if (offer.PremiumPrice) {
-                    updateCurrency(inventory, offer.PremiumPrice[0], true, prePurchaseInventoryChanges);
+                    updateCurrency(
+                        inventory,
+                        offer.PremiumPrice[0] * purchaseRequest.PurchaseParams.Quantity,
+                        true,
+                        prePurchaseInventoryChanges
+                    );
                 }
             }
             if (
@@ -156,7 +166,7 @@ export const handlePurchase = async (
             }
             if (!inventory.dontSubtractPurchaseItemCost) {
                 if (offer.ItemPrices) {
-                    handleItemPrices(
+                    await handleItemPrices(
                         inventory,
                         offer.ItemPrices,
                         purchaseRequest.PurchaseParams.Quantity,
@@ -200,18 +210,24 @@ export const handlePurchase = async (
         undefined,
         false,
         purchaseRequest.PurchaseParams.UsePremium,
-        seed
+        seed,
+        purchaseRequest.buildLabel
     );
     combineInventoryChanges(purchaseResponse.InventoryChanges, prePurchaseInventoryChanges);
 
-    updateCurrency(
-        inventory,
-        purchaseRequest.PurchaseParams.ExpectedPrice,
-        purchaseRequest.PurchaseParams.UsePremium,
-        purchaseResponse.InventoryChanges
-    );
-
     switch (purchaseRequest.PurchaseParams.Source) {
+        case PurchaseSource.Market:
+            if (!purchaseRequest.PurchaseParams.ExpectedPrice) {
+                logger.debug(`client didn't provide ExpectedPrice, attempt to get it from PE+`);
+                purchaseRequest.PurchaseParams.ExpectedPrice = getPrice(
+                    purchaseRequest.PurchaseParams.StoreItem,
+                    purchaseRequest.PurchaseParams.Quantity,
+                    purchaseRequest.PurchaseParams.Durability,
+                    purchaseRequest.PurchaseParams.UsePremium,
+                    purchaseRequest.buildLabel
+                );
+            }
+            break;
         case PurchaseSource.VoidTrader: {
             const worldState = getWorldState(purchaseRequest.buildLabel);
             if (purchaseRequest.PurchaseParams.SourceId! != worldState.VoidTraders[0]._id.$oid) {
@@ -295,6 +311,9 @@ export const handlePurchase = async (
             await handleDailyDealPurchase(inventory, purchaseRequest.PurchaseParams, purchaseResponse);
             break;
         case PurchaseSource.Vendor:
+            if (purchaseRequest.PurchaseParams.ExpectedPrice) {
+                throw new Error(`vendor purchase should not have an expected price`);
+            }
             if (purchaseRequest.PurchaseParams.SourceId! in ExportVendors) {
                 const vendor = ExportVendors[purchaseRequest.PurchaseParams.SourceId!];
                 const offer = vendor.items.find(x => x.storeItem == purchaseRequest.PurchaseParams.StoreItem);
@@ -306,7 +325,7 @@ export const handlePurchase = async (
                         updateCurrency(inventory, offer.platinum, true, purchaseResponse.InventoryChanges);
                     }
                     if (offer.itemPrices && !inventory.dontSubtractPurchaseItemCost) {
-                        handleItemPrices(
+                        await handleItemPrices(
                             inventory,
                             offer.itemPrices,
                             purchaseRequest.PurchaseParams.Quantity,
@@ -314,9 +333,42 @@ export const handlePurchase = async (
                         );
                     }
                 }
-            }
-            if (purchaseRequest.PurchaseParams.ExpectedPrice) {
-                throw new Error(`vendor purchase should not have an expected price`);
+            } else {
+                let manifest = getVendorManifestByOid(
+                    purchaseRequest.PurchaseParams.SourceId!,
+                    purchaseRequest.buildLabel
+                );
+                if (manifest) {
+                    manifest = applyStandingToVendorManifest(manifest, inventory.Affiliations);
+                    let ItemId: string | undefined;
+                    if (purchaseRequest.PurchaseParams.ExtraPurchaseInfoJson) {
+                        ItemId = (
+                            JSON.parse(purchaseRequest.PurchaseParams.ExtraPurchaseInfoJson) as { ItemId: string }
+                        ).ItemId;
+                    }
+                    const offer = ItemId
+                        ? manifest.VendorInfo.ItemManifest.find(x => x.Id.$oid == ItemId)
+                        : manifest.VendorInfo.ItemManifest.find(
+                              x => x.StoreItem == purchaseRequest.PurchaseParams.StoreItem
+                          );
+                    if (!offer) {
+                        throw new Error(
+                            `unknown vendor offer: ${ItemId ? ItemId : purchaseRequest.PurchaseParams.StoreItem}`
+                        );
+                    }
+                    if (offer.StandingCost && !inventory.dontSubtractPurchaseStandingCost) {
+                        const affiliation = inventory.Affiliations.find(x => x.Tag == offer.Affiliation!);
+                        if (affiliation) {
+                            purchaseResponse.Standing = [
+                                {
+                                    Tag: offer.Affiliation!,
+                                    Standing: offer.StandingCost * purchaseRequest.PurchaseParams.Quantity
+                                }
+                            ];
+                            affiliation.Standing -= offer.StandingCost * purchaseRequest.PurchaseParams.Quantity;
+                        }
+                    }
+                }
             }
             break;
         case PurchaseSource.PrimeVaultTrader: {
@@ -356,31 +408,29 @@ export const handlePurchase = async (
         }
     }
 
+    if (purchaseRequest.PurchaseParams.ExpectedPrice) {
+        updateCurrency(
+            inventory,
+            purchaseRequest.PurchaseParams.ExpectedPrice,
+            purchaseRequest.PurchaseParams.UsePremium,
+            purchaseResponse.InventoryChanges
+        );
+    }
+
     return purchaseResponse;
 };
 
-const handleItemPrices = (
+const handleItemPrices = async (
     inventory: TInventoryDatabaseDocument,
     itemPrices: IMiscItem[],
     purchaseQuantity: number,
     inventoryChanges: IInventoryChanges
-): void => {
-    for (const item of itemPrices) {
-        const invItem: IMiscItem = {
-            ItemType: item.ItemType,
-            ItemCount: item.ItemCount * purchaseQuantity * -1
-        };
-
-        addMiscItems(inventory, [invItem]);
-
-        inventoryChanges.MiscItems ??= [];
-        const change = inventoryChanges.MiscItems.find(x => x.ItemType == item.ItemType);
-        if (change) {
-            change.ItemCount += invItem.ItemCount;
-        } else {
-            inventoryChanges.MiscItems.push(invItem);
-        }
-    }
+): Promise<void> => {
+    const items: IMiscItem[] = itemPrices.map(({ ItemType, ItemCount }) => ({
+        ItemType,
+        ItemCount: ItemCount * purchaseQuantity * -1
+    }));
+    await addItems(inventory, items, inventoryChanges);
 };
 
 export const handleDailyDealPurchase = async (
@@ -402,13 +452,14 @@ export const handleDailyDealPurchase = async (
     }
 };
 
-export const handleBundleAcqusition = async (
+export const handleBundleAcquisition = async (
     storeItemName: string,
     inventory: TInventoryDatabaseDocument,
     quantity: number = 1,
-    inventoryChanges: IInventoryChanges = {}
+    inventoryChanges: IInventoryChanges = {},
+    buildLabel?: string
 ): Promise<IInventoryChanges> => {
-    const bundle = ExportBundles[storeItemName];
+    const bundle = getBundle(storeItemName, buildLabel)!;
     logger.debug("acquiring bundle", bundle);
     for (const component of bundle.components) {
         combineInventoryChanges(
@@ -419,7 +470,10 @@ export const handleBundleAcqusition = async (
                     inventory,
                     component.purchaseQuantity * quantity,
                     component.durabilityDays,
-                    true
+                    true,
+                    true,
+                    undefined,
+                    buildLabel
                 )
             ).InventoryChanges
         );
@@ -434,14 +488,21 @@ export const handleStoreItemAcquisition = async (
     durabilityDays: number = 3,
     ignorePurchaseQuantity: boolean = false,
     premiumPurchase: boolean = true,
-    seed?: bigint
+    seed?: bigint,
+    buildLabel?: string
 ): Promise<IPurchaseResponse> => {
     let purchaseResponse = {
         InventoryChanges: {}
     };
-    logger.debug(`handling acquision of ${storeItemName}`);
+    logger.debug(`handling acquisition of ${storeItemName}`);
     if (storeItemName in ExportBundles) {
-        await handleBundleAcqusition(storeItemName, inventory, quantity, purchaseResponse.InventoryChanges);
+        await handleBundleAcquisition(
+            storeItemName,
+            inventory,
+            quantity,
+            purchaseResponse.InventoryChanges,
+            buildLabel
+        );
     } else {
         const storeCategory = getStoreItemCategory(storeItemName);
         const internalName = fromStoreItem(storeItemName);
@@ -477,7 +538,8 @@ export const handleStoreItemAcquisition = async (
                     quantity,
                     ignorePurchaseQuantity,
                     premiumPurchase,
-                    seed
+                    seed,
+                    buildLabel
                 );
                 break;
             case "Boosters":
@@ -544,15 +606,17 @@ const handleSlotPurchase = (
 const handleBoosterPackPurchase = async (
     typeName: string,
     inventory: TInventoryDatabaseDocument,
-    quantity: number
+    quantity: number,
+    buildLabel?: string
 ): Promise<IPurchaseResponse> => {
-    const pack = ExportBoosterPacks[typeName];
+    const pack = getBoosterPack(typeName, buildLabel);
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!pack) {
         throw new Error(`unknown booster pack: ${typeName}`);
     }
     const purchaseResponse: IPurchaseResponse = {
         BoosterPackItems: "",
+        Body: "",
         InventoryChanges: {}
     };
     if (quantity < 1) {
@@ -622,15 +686,26 @@ const handleBoosterPackPurchase = async (
                 if (!pack.canGiveDuplicates) {
                     disallowedItems.add(result.Item);
                 }
-                purchaseResponse.BoosterPackItems += toStoreItem(result.Item) + ',{"lvl":0};';
+                const fingerprint = { lvl: 0 };
+                if (result.Item.startsWith("/Lotus/Upgrades/Mods/Fusers/")) {
+                    if (result.Item.endsWith("RareModFuser")) {
+                        fingerprint.lvl = Math.floor(Math.random() * 4) + 2;
+                    } else if (result.Item.endsWith("CommonModFuser") || result.Item.endsWith("UncommonModFuser")) {
+                        fingerprint.lvl = Math.floor(Math.random() * 3) + 1;
+                    }
+                }
+                const stringifiedFingerprint = JSON.stringify(fingerprint);
+                purchaseResponse.BoosterPackItems += toStoreItem(result.Item) + `,${stringifiedFingerprint};`;
                 combineInventoryChanges(
                     purchaseResponse.InventoryChanges,
-                    await addItem(inventory, result.Item, result.Amount)
+                    await addItem(inventory, result.Item, result.Amount, false, undefined, stringifiedFingerprint)
                 );
                 ++roll;
             }
         }
     }
+    if (purchaseResponse.BoosterPackItems)
+        purchaseResponse.Body = purchaseResponse.BoosterPackItems.replace(/[{}"]/g, "").replace(/:/g, "=");
     return purchaseResponse;
 };
 
@@ -657,7 +732,8 @@ const handleTypesPurchase = async (
     quantity: number,
     ignorePurchaseQuantity: boolean,
     premiumPurchase: boolean = true,
-    seed?: bigint
+    seed?: bigint,
+    buildLabel?: string
 ): Promise<IPurchaseResponse> => {
     const typeCategory = getStoreItemTypesCategory(typesName);
     logger.debug(`type category ${typeCategory}`);
@@ -667,7 +743,7 @@ const handleTypesPurchase = async (
                 InventoryChanges: await addItem(inventory, typesName, quantity, premiumPurchase, seed, undefined, true)
             };
         case "BoosterPacks":
-            return handleBoosterPackPurchase(typesName, inventory, quantity);
+            return handleBoosterPackPurchase(typesName, inventory, quantity, buildLabel);
         case "SlotItems":
             return handleSlotPurchase(typesName, inventory, quantity, ignorePurchaseQuantity);
         case "CreditBundles":

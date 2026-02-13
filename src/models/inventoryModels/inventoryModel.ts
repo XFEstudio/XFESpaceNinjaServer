@@ -96,7 +96,10 @@ import type {
     IDescentLevelReward,
     IDescentCategoryRewardClient,
     IDescentCategoryRewardDatabase,
-    IFocusLoadoutDatabase
+    IFocusLoadoutDatabase,
+    IChallengeInstanceStateDatabase,
+    IChallengeInstanceStateClient,
+    IParam
 } from "../../types/inventoryTypes/inventoryTypes.ts";
 import { equipmentKeys } from "../../types/inventoryTypes/inventoryTypes.ts";
 import type { IOid, ITypeCount } from "../../types/commonTypes.ts";
@@ -131,10 +134,11 @@ export const typeCountSchema = new Schema<ITypeCount>({ ItemType: String, ItemCo
 
 typeCountSchema.set("toJSON", {
     transform(_doc, obj: Record<string, any>) {
-        if (obj.ItemCount > 2147483647) {
-            obj.ItemCount = 2147483647;
-        } else if (obj.ItemCount < -2147483648) {
-            obj.ItemCount = -2147483648;
+        // Ensure numbers comfortably fit in a 32-bit integer so the client's in-memory value doesn't overflow or underflow.
+        if (obj.ItemCount > 999_999_999) {
+            obj.ItemCount = 999_999_999;
+        } else if (obj.ItemCount < -999_999_999) {
+            obj.ItemCount = -999_999_999;
         }
     }
 });
@@ -1507,6 +1511,33 @@ const nokkoColonySchema = new Schema<INokkoColony>(
     { _id: false }
 );
 
+const challengeInstanceStateParamSchema = new Schema<IParam>(
+    {
+        n: String,
+        v: String
+    },
+    { _id: false }
+);
+
+const challengeInstanceStateSchema = new Schema<IChallengeInstanceStateDatabase>({
+    Progress: Number,
+    params: [challengeInstanceStateParamSchema],
+    IsRewardCollected: Boolean
+});
+
+challengeInstanceStateSchema.set("toJSON", {
+    virtuals: true,
+    transform(_doc, obj: Record<string, any>) {
+        const db = obj as IChallengeInstanceStateDatabase;
+        const client = obj as IChallengeInstanceStateClient;
+
+        client.id = toOid(db._id);
+
+        delete obj._id;
+        delete obj.__v;
+    }
+});
+
 const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
     {
         accountOwnerId: Schema.Types.ObjectId,
@@ -1520,6 +1551,7 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         dontSubtractPurchaseStandingCost: Boolean,
         dontSubtractVoidTraces: Boolean,
         dontSubtractConsumables: Boolean,
+        dontSubtractKeys: Boolean,
         finishInvasionsInOneMission: Boolean,
         infiniteCredits: Boolean,
         infinitePlatinum: Boolean,
@@ -1549,15 +1581,17 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         flawlessRelicsAlwaysGiveSilverReward: Boolean,
         radiantRelicsAlwaysGiveGoldReward: Boolean,
         disableDailyTribute: Boolean,
+        tradesDontTouchInventory: Boolean, // API-only cheat for bot developers
+
         nemesisHenchmenKillsMultiplierGrineer: Number,
         nemesisHenchmenKillsMultiplierCorpus: Number,
         nemesisAntivirusGainMultiplier: Number,
         nemesisHintProgressMultiplierGrineer: Number,
         nemesisHintProgressMultiplierCorpus: Number,
         nemesisExtraWeapon: Number,
-        spoofMasteryRank: { type: Number, default: -1 },
-        relicRewardItemCountMultiplier: { type: Number, default: 1 },
-        nightwaveStandingMultiplier: { type: Number, default: 1 },
+        spoofMasteryRank: Number,
+        relicRewardItemCountMultiplier: Number,
+        nightwaveStandingMultiplier: Number,
 
         Created: Date,
 
@@ -1847,6 +1881,7 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         Nemesis: nemesisSchema,
         NemesisHistory: { type: [nemesisSchema], default: undefined },
         LastNemesisAllySpawnTime: { type: Date, default: undefined },
+        NemesisTaxedCredits: Number,
 
         //TradingRulesConfirmed,ShowFriendInvNotifications(Option->Social)
         Settings: settingsSchema,
@@ -1894,7 +1929,7 @@ const inventorySchema = new Schema<IInventoryDatabase, InventoryDocumentProps>(
         CurrentLoadOutIds: [Schema.Types.Mixed], // should be Types.ObjectId[] but might be IOid[] because of old commits
         RandomUpgradesIdentified: Number,
         BountyScore: Number,
-        //ChallengeInstanceStates: [Schema.Types.Mixed],
+        ChallengeInstanceStates: { type: [challengeInstanceStateSchema], default: undefined },
         RecentVendorPurchases: { type: [recentVendorPurchaseSchema], default: undefined },
         //Robotics: [Schema.Types.Mixed],
         CollectibleSeries: { type: [collectibleEntrySchema], default: undefined },
@@ -1958,6 +1993,7 @@ inventorySchema.set("toJSON", {
         delete returnedObject.MissionRelicRewards;
         delete returnedObject.HarvesterPoints;
         delete returnedObject.DeathSquadPoints;
+        delete returnedObject.NemesisTaxedCredits;
 
         const inventoryDatabase = returnedObject as Partial<IInventoryDatabase>;
         const inventoryResponse = returnedObject as IInventoryClient;
